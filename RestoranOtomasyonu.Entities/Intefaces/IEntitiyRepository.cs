@@ -10,11 +10,11 @@ namespace RestoranOtomasyonu.Entities.Intefaces
 {
     public interface IEntitiyRepository<TContext,TEntity>
         where TContext:DbContext,new()
-        where TEntity : class,new()
+        where TEntity : class,IEntity ,new()
     {
         List<TEntity> GetAll(TContext context,Expression<Func<TEntity,bool>> filter = null);
         TEntity GetByFilter(TContext context, Expression<Func<TEntity, bool>> filter);
-        void AddOrUpdate(TContext context,TEntity entity);
+        bool AddOrUpdate(TContext context,TEntity entity);
         void Delete(TContext context, Expression<Func<TEntity,bool>>  filter);
         void Save(TContext context);    
     }

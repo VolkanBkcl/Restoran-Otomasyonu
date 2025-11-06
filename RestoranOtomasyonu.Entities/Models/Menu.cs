@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RestoranOtomasyonu.Entities.Intefaces;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 namespace RestoranOtomasyonu.Entities.Models
 {
     
-    public class Menu
+    public class Menu:IEntity
     {
       
         public int Id { get; set; }

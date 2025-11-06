@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RestoranOtomasyonu.Entities.Intefaces;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 namespace RestoranOtomasyonu.Entities.Models
 {
     
-    public class Satislar
+    public class Satislar:IEntity
     {
         public int Id { get; set; }
 

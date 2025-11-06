@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RestoranOtomasyonu.Entities.Intefaces;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -9,14 +10,16 @@ using System.Threading.Tasks;
 namespace RestoranOtomasyonu.Entities.Models
 {
     
-    public class Urun
+    public class Urun:IEntity
     {
         [Key]
         public int Id { get; set; }
         [ForeignKey("Menu")]
         public int MenuId { get; set; }
 
-       
+        public string UrunKodu { get; set; }
+
+
         public string MasaAdi { get; set; }
 
         public string UrunAdi { get; set; }
@@ -28,6 +31,9 @@ namespace RestoranOtomasyonu.Entities.Models
         public string Aciklama { get; set; }
 
         public string Tarih { get; set; }
+
+
+        public string Resim { get; set; }
 
 
         public Menu Menu { get; set; }

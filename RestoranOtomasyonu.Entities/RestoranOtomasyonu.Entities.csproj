@@ -40,9 +40,19 @@
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
       <HintPath>..\packages\EntityFramework.6.5.1\lib\net45\EntityFramework.SqlServer.dll</HintPath>
     </Reference>
+    <Reference Include="FluentValidation, Version=11.0.0.0, Culture=neutral, PublicKeyToken=7de548da2fbae0f0, processorArchitecture=MSIL">
+      <HintPath>..\packages\FluentValidation.11.12.0\lib\netstandard2.0\FluentValidation.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=4.0.4.1, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.4.5.3\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.0.1, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Threading.Tasks.Extensions.4.5.4\lib\net461\System.Threading.Tasks.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -62,6 +72,7 @@
     <Compile Include="DAL\SatislarDal.cs" />
     <Compile Include="DAL\UrunDal.cs" />
     <Compile Include="Intefaces\IEntitiyRepository.cs" />
+    <Compile Include="Intefaces\IEntity.cs" />
     <Compile Include="Mapping\KullaniciHareketleriMap.cs" />
     <Compile Include="Mapping\KullanicilarMap.cs" />
     <Compile Include="Mapping\MasaHareketleriMap.cs" />
@@ -74,6 +85,22 @@
     <Compile Include="Migrations\202511021139494_TabloIliskilendirme.cs" />
     <Compile Include="Migrations\202511021139494_TabloIliskilendirme.Designer.cs">
       <DependentUpon>202511021139494_TabloIliskilendirme.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202511051901097_Validations2.cs" />
+    <Compile Include="Migrations\202511051901097_Validations2.Designer.cs">
+      <DependentUpon>202511051901097_Validations2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202511061210173_MasaHareketlerindeDeğişiklik.cs" />
+    <Compile Include="Migrations\202511061210173_MasaHareketlerindeDeğişiklik.Designer.cs">
+      <DependentUpon>202511061210173_MasaHareketlerindeDeğişiklik.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202511061335111_Resim.cs" />
+    <Compile Include="Migrations\202511061335111_Resim.Designer.cs">
+      <DependentUpon>202511061335111_Resim.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202511061351083_UrunResim.cs" />
+    <Compile Include="Migrations\202511061351083_UrunResim.Designer.cs">
+      <DependentUpon>202511061351083_UrunResim.cs</DependentUpon>
     </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\KullaniciHareketleri.cs" />
@@ -88,17 +115,37 @@
     <Compile Include="Models\Urun.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Repository\EntityRepositoryBase.cs" />
+    <Compile Include="Tools\ValidatorTools.cs" />
+    <Compile Include="Validations\KullaniciHareketleriValidator.cs" />
+    <Compile Include="Validations\KullanicilarValidator.cs" />
+    <Compile Include="Validations\MasaHareketleriValidator.cs" />
+    <Compile Include="Validations\MasalarValidator.cs" />
+    <Compile Include="Validations\MenuValidator.cs" />
+    <Compile Include="Validations\OdemeHareketleriValidator.cs" />
+    <Compile Include="Validations\RollerValidator.cs" />
+    <Compile Include="Validations\SatislarValidator.cs" />
+    <Compile Include="Validations\UrunValidator.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Validations\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <EmbeddedResource Include="Migrations\202511021139494_TabloIliskilendirme.resx">
       <DependentUpon>202511021139494_TabloIliskilendirme.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511051901097_Validations2.resx">
+      <DependentUpon>202511051901097_Validations2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511061210173_MasaHareketlerindeDeğişiklik.resx">
+      <DependentUpon>202511061210173_MasaHareketlerindeDeğişiklik.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511061335111_Resim.resx">
+      <DependentUpon>202511061335111_Resim.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511061351083_UrunResim.resx">
+      <DependentUpon>202511061351083_UrunResim.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

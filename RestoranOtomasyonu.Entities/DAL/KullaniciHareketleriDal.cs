@@ -1,5 +1,6 @@
 ﻿using RestoranOtomasyonu.Entities.Models;
 using RestoranOtomasyonu.Entities.Repository;
+using RestoranOtomasyonu.Entities.Validations;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace RestoranOtomasyonu.Entities.DAL
 {
-    public class KullaniciHareketleriDal:EntityRepositoryBase<RestoranContext,KullaniciHareketleri>
+    public class KullaniciHareketleriDal:EntityRepositoryBase<RestoranContext,KullaniciHareketleri,KullaniciHareketleriValidator>
     {
         
     }
