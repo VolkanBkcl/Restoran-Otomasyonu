@@ -13,9 +13,10 @@ namespace RestoranOtomasyonu.Entities.Validations
         public UrunValidator()
         {
             RuleFor(p => p.UrunKodu).NotEmpty().WithMessage("Ürün Kodu alanı boş geçilemez!");
-            RuleFor(p => p.UrunAdi).Length(12).WithMessage("Ürün Adı alanı boş geçilemez!");          
+            RuleFor(p => p.UrunAdi).NotEmpty().WithMessage("Ürün Adı alanı boş geçilemez!");          
             RuleFor(p => p.BirimFiyati1).NotEmpty().WithMessage("BirimFiyatı1 alanı boş geçilemez!");
             RuleFor(p => p.BirimFiyati2).NotEmpty().WithMessage("BirimFiyatı2 alanı boş geçilemez!");
+            RuleFor(p => p.BirimFiyati3).NotEmpty().WithMessage("BirimFiyatı3 alanı boş geçilemez!");
         }
     }
 }

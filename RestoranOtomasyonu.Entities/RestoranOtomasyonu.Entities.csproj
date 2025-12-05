@@ -102,6 +102,14 @@
     <Compile Include="Migrations\202511061351083_UrunResim.Designer.cs">
       <DependentUpon>202511061351083_UrunResim.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\202511081152210_BirimFiyatGüncellemesi.cs" />
+    <Compile Include="Migrations\202511081152210_BirimFiyatGüncellemesi.Designer.cs">
+      <DependentUpon>202511081152210_BirimFiyatGüncellemesi.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\202511230735104_MasaAdiSilindi.cs" />
+    <Compile Include="Migrations\202511230735104_MasaAdiSilindi.Designer.cs">
+      <DependentUpon>202511230735104_MasaAdiSilindi.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\KullaniciHareketleri.cs" />
     <Compile Include="Models\Kullanicilar.cs" />
@@ -146,6 +154,12 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\202511061351083_UrunResim.resx">
       <DependentUpon>202511061351083_UrunResim.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511081152210_BirimFiyatGüncellemesi.resx">
+      <DependentUpon>202511081152210_BirimFiyatGüncellemesi.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511230735104_MasaAdiSilindi.resx">
+      <DependentUpon>202511230735104_MasaAdiSilindi.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

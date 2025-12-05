@@ -1,4 +1,6 @@
 ﻿using DevExpress.XtraEditors;
+using RestoranOtomasyonu.Entities.DAL;
+using RestoranOtomasyonu.Entities.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -13,9 +15,75 @@ namespace RestoranOtomasyonu.WinForms.Urunler
 {
     public partial class frmUrunler : DevExpress.XtraEditors.XtraForm
     {
+        private RestoranContext context = new RestoranContext();
+        private UrunDal urunDal = new UrunDal();
+            
         public frmUrunler()
         {
             InitializeComponent();
+            Listele();
+        }
+
+        private void Listele()
+        {
+            gridControl1.DataSource = urunDal.UrunListele(context);
+        }
+
+        private void gridControl1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnYeni_Click(object sender, EventArgs e)
+        {
+            frmUrunKaydet frm = new frmUrunKaydet(entity:new Urun());
+            frm.ShowDialog();
+            if (frm.kaydet)
+            {
+                Listele(); 
+            }
+            Listele();
+        }
+
+        private void labelControl1_Click(object sender, EventArgs e)
+        {
+            int seciliid = Convert.ToInt32(gridView1.GetFocusedRowCellValue(colId));
+            frmUrunKaydet frm = new frmUrunKaydet(entity:urunDal.GetByFilter(context,u=>u.Id==seciliid));
+            frm.ShowDialog();
+            if (frm.kaydet)
+            {
+                Listele();
+            }
+            Listele();
+        }
+
+        private void btnYenile_Click(object sender, EventArgs e)
+        {
+            Listele();
+        }
+
+        private void btnDuzenle_Click(object sender, EventArgs e)
+        {
+            int seciliid = Convert.ToInt32(gridView1.GetFocusedRowCellValue(colId));
+            frmUrunKaydet frm = new frmUrunKaydet(urunDal.GetByFilter(context,u=>u.Id==seciliid));
+            frm.ShowDialog();
+            Listele();
+        }
+
+        private void btnSil_Click(object sender, EventArgs e)
+        {
+            int seciliId = Convert.ToInt32(gridView1.GetFocusedRowCellValue(colId));
+            if (MessageBox.Show("Seçili kayıt silinecek. Onaylıyor musunuz?","Uyarı",MessageBoxButtons.YesNo,MessageBoxIcon.Question)==DialogResult.Yes)
+            {
+                urunDal.Delete(context, filter: u =>u.Id==seciliId);
+                urunDal.Save(context);
+                Listele();
+            }
+        }
+
+        private void btnKapat_Click(object sender, EventArgs e)
+        {
+            this.Close();
         }
     }
 }

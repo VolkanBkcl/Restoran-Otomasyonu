@@ -17,12 +17,11 @@ namespace RestoranOtomasyonu.Entities.Mapping
             this.ToTable("Urun");
             this.HasKey(p=> p.Id);
             this.Property(p => p.Id).HasDatabaseGeneratedOption(DatabaseGeneratedOption.Identity);
-            this.Property(p => p.MasaAdi).HasColumnType("varchar").HasMaxLength(15);
             this.Property(p => p.UrunAdi).HasColumnType("varchar").HasMaxLength(50);
             this.Property(p => p.Aciklama).HasColumnType("varchar").HasMaxLength(300);
             this.Property(p => p.BirimFiyati1).HasPrecision(28,2);
-            this.Property(p => p.MasaAdi).HasColumnType("varchar").HasMaxLength(15);
-            this.Property(p => p.MasaAdi).HasColumnType("varchar").HasMaxLength(15);
+            this.Property(p => p.BirimFiyati2).HasPrecision(28,2);
+            this.Property(p => p.BirimFiyati3).HasPrecision(28,2);
 
             this.HasRequired(x => x.Menu).WithMany(x => x.Urun).HasForeignKey(x => x.MenuId);
         }

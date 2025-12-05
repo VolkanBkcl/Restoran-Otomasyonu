@@ -95,12 +95,12 @@
             this.barWorkspaceMenuItem1.Caption = "barWorkspaceMenuItem1";
             this.barWorkspaceMenuItem1.Id = 1;
             this.barWorkspaceMenuItem1.Name = "barWorkspaceMenuItem1";
+            this.barWorkspaceMenuItem1.WorkspaceManager = this.workspaceManager1;
             // 
             // workspaceManager1
             // 
             this.workspaceManager1.TargetControl = this;
             this.workspaceManager1.TransitionType = pushTransition1;
-            this.barWorkspaceMenuItem1.WorkspaceManager = this.workspaceManager1;
             // 
             // barButtonItem1
             // 
@@ -131,6 +131,7 @@
             this.btnMenuler.ImageOptions.SvgImage = ((DevExpress.Utils.Svg.SvgImage)(resources.GetObject("btnMenuler.ImageOptions.SvgImage")));
             this.btnMenuler.Name = "btnMenuler";
             this.btnMenuler.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            this.btnMenuler.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btnMenuler_ItemClick);
             // 
             // M
             // 
@@ -290,6 +291,7 @@
             this.StatusBar = this.ribbonStatusBar;
             this.Text = "Restoran Otomasyonu";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
+            this.Load += new System.EventHandler(this.frmAnaMenu_Load);
             ((System.ComponentModel.ISupportInitialize)(this.ribbon)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.xtraTabbedMdiManager1)).EndInit();
             this.ResumeLayout(false);
