@@ -1,0 +1,6 @@
+@RestoranOtomasyonu.WebAPI_HostAddress = http://localhost:5146
+
+GET {{RestoranOtomasyonu.WebAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

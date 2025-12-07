@@ -1,4 +1,5 @@
 ﻿using DevExpress.XtraEditors;
+using DevExpress.XtraGrid.Export;
 using RestoranOtomasyonu.Entities.DAL;
 using RestoranOtomasyonu.Entities.Models;
 using System;
@@ -27,6 +28,32 @@ namespace RestoranOtomasyonu.WinForms.Urunler
         private void Listele()
         {
             gridControl1.DataSource = urunDal.UrunListele(context);
+            gridView1.BestFitColumns();
+        }
+
+        private void txtAra_EditValueChanged(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtAra.Text))
+            {
+                gridView1.ActiveFilterString = "";
+                return;
+            }
+
+            string filterString = $"[UrunAdi] LIKE '%{txtAra.Text}%' OR [UrunKodu] LIKE '%{txtAra.Text}%' OR [Aciklama] LIKE '%{txtAra.Text}%'";
+            gridView1.ActiveFilterString = filterString;
+        }
+
+        private void btnExport_Click(object sender, EventArgs e)
+        {
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "Excel Dosyası|*.xlsx";
+            saveFileDialog.FileName = "Urunler_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".xlsx";
+            
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                gridControl1.ExportToXlsx(saveFileDialog.FileName);
+                MessageBox.Show("Dosya başarıyla dışa aktarıldı.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
         }
 
         private void gridControl1_Click(object sender, EventArgs e)

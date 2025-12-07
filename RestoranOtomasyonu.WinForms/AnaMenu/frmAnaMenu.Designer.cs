@@ -56,6 +56,7 @@
             this.frmAyarlar = new DevExpress.XtraBars.Ribbon.RibbonPage();
             this.AyarlarribbonPageGroup = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.ribbonStatusBar = new DevExpress.XtraBars.Ribbon.RibbonStatusBar();
+            this.barStaticItemStatus = new DevExpress.XtraBars.BarStaticItem();
             this.xtraTabbedMdiManager1 = new DevExpress.XtraTabbedMdi.XtraTabbedMdiManager(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.ribbon)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.xtraTabbedMdiManager1)).BeginInit();
@@ -80,15 +81,19 @@
             this.btnRoller,
             this.btnDoviz,
             this.btnYardim,
-            this.btnHakkimizda});
+            this.btnHakkimizda,
+            this.barStaticItemStatus});
             this.ribbon.Location = new System.Drawing.Point(0, 0);
-            this.ribbon.MaxItemId = 16;
+            this.ribbon.MaxItemId = 17;
             this.ribbon.Name = "ribbon";
             this.ribbon.Pages.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPage[] {
             this.frmRestoran,
             this.frmAyarlar});
             this.ribbon.Size = new System.Drawing.Size(1152, 158);
             this.ribbon.StatusBar = this.ribbonStatusBar;
+            // Modern görünüm ayarları
+            this.ribbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
+            this.ribbon.ShowExpandCollapseButton = DevExpress.Utils.DefaultBoolean.True;
             // 
             // barWorkspaceMenuItem1
             // 
@@ -115,6 +120,7 @@
             this.btnMasalar.ImageOptions.SvgImage = ((DevExpress.Utils.Svg.SvgImage)(resources.GetObject("btnMasalar.ImageOptions.SvgImage")));
             this.btnMasalar.Name = "btnMasalar";
             this.btnMasalar.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            this.btnMasalar.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btnMasalar_ItemClick);
             // 
             // btnMasaHareketleri
             // 
@@ -123,6 +129,7 @@
             this.btnMasaHareketleri.ImageOptions.SvgImage = ((DevExpress.Utils.Svg.SvgImage)(resources.GetObject("btnMasaHareketleri.ImageOptions.SvgImage")));
             this.btnMasaHareketleri.Name = "btnMasaHareketleri";
             this.btnMasaHareketleri.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            this.btnMasaHareketleri.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btnMasaHareketleri_ItemClick);
             // 
             // btnMenuler
             // 
@@ -146,6 +153,7 @@
             this.btnMenuHareketleri.ImageOptions.SvgImage = ((DevExpress.Utils.Svg.SvgImage)(resources.GetObject("btnMenuHareketleri.ImageOptions.SvgImage")));
             this.btnMenuHareketleri.Name = "btnMenuHareketleri";
             this.btnMenuHareketleri.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            this.btnMenuHareketleri.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btnMenuHareketleri_ItemClick);
             // 
             // btnUrunler
             // 
@@ -163,14 +171,17 @@
             this.btnUrunHareketleri.ImageOptions.SvgImage = ((DevExpress.Utils.Svg.SvgImage)(resources.GetObject("btnUrunHareketleri.ImageOptions.SvgImage")));
             this.btnUrunHareketleri.Name = "btnUrunHareketleri";
             this.btnUrunHareketleri.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            this.btnUrunHareketleri.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btnUrunHareketleri_ItemClick);
             // 
             // btnKullanicilar
             // 
             this.btnKullanicilar.Caption = "Kullanıcılar";
             this.btnKullanicilar.Id = 10;
+            // SVG ikon kullanımına geçiş için hazırlık (şimdilik LargeImage kullanılıyor)
             this.btnKullanicilar.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btnKullanicilar.ImageOptions.LargeImage")));
             this.btnKullanicilar.Name = "btnKullanicilar";
             this.btnKullanicilar.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            this.btnKullanicilar.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btnKullanicilar_ItemClick);
             // 
             // btnKullaniciHareketleri
             // 
@@ -179,6 +190,7 @@
             this.btnKullaniciHareketleri.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btnKullaniciHareketleri.ImageOptions.LargeImage")));
             this.btnKullaniciHareketleri.Name = "btnKullaniciHareketleri";
             this.btnKullaniciHareketleri.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            this.btnKullaniciHareketleri.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btnKullaniciHareketleri_ItemClick);
             // 
             // btnRoller
             // 
@@ -187,10 +199,11 @@
             this.btnRoller.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btnRoller.ImageOptions.LargeImage")));
             this.btnRoller.Name = "btnRoller";
             this.btnRoller.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            this.btnRoller.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btnRoller_ItemClick);
             // 
             // btnDoviz
             // 
-            this.btnDoviz.Caption = "DövizIslemleri";
+            this.btnDoviz.Caption = "Döviz İşlemleri";
             this.btnDoviz.Id = 13;
             this.btnDoviz.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btnDoviz.ImageOptions.LargeImage")));
             this.btnDoviz.Name = "btnDoviz";
@@ -228,6 +241,7 @@
             this.MasalarRibbonPageGroup.ItemLinks.Add(this.btnMasaHareketleri);
             this.MasalarRibbonPageGroup.Name = "MasalarRibbonPageGroup";
             this.MasalarRibbonPageGroup.Text = "Masalar";
+            this.MasalarRibbonPageGroup.ShowCaptionButton = false;
             // 
             // MenulerRibbonPageGroup
             // 
@@ -235,6 +249,7 @@
             this.MenulerRibbonPageGroup.ItemLinks.Add(this.btnMenuHareketleri);
             this.MenulerRibbonPageGroup.Name = "MenulerRibbonPageGroup";
             this.MenulerRibbonPageGroup.Text = "Menüler";
+            this.MenulerRibbonPageGroup.ShowCaptionButton = false;
             // 
             // UrunlerRibbonPageGroup
             // 
@@ -242,6 +257,7 @@
             this.UrunlerRibbonPageGroup.ItemLinks.Add(this.btnUrunHareketleri);
             this.UrunlerRibbonPageGroup.Name = "UrunlerRibbonPageGroup";
             this.UrunlerRibbonPageGroup.Text = "Ürünler";
+            this.UrunlerRibbonPageGroup.ShowCaptionButton = false;
             // 
             // KullanıcılarRibbonPageGroup
             // 
@@ -250,6 +266,7 @@
             this.KullanıcılarRibbonPageGroup.ItemLinks.Add(this.btnRoller);
             this.KullanıcılarRibbonPageGroup.Name = "KullanıcılarRibbonPageGroup";
             this.KullanıcılarRibbonPageGroup.Text = "Kullanıcılar";
+            this.KullanıcılarRibbonPageGroup.ShowCaptionButton = false;
             // 
             // frmAyarlar
             // 
@@ -265,13 +282,23 @@
             this.AyarlarribbonPageGroup.ItemLinks.Add(this.btnHakkimizda);
             this.AyarlarribbonPageGroup.Name = "AyarlarribbonPageGroup";
             this.AyarlarribbonPageGroup.Text = "Ayarlar";
+            this.AyarlarribbonPageGroup.ShowCaptionButton = false;
+            // 
+            // barStaticItemStatus
+            // 
+            this.barStaticItemStatus.Caption = "Restoran Otomasyonu v1.0 | Hazır";
+            this.barStaticItemStatus.Id = 16;
+            this.barStaticItemStatus.Name = "barStaticItemStatus";
             // 
             // ribbonStatusBar
             // 
+            this.ribbonStatusBar.ItemLinks.Add(this.barStaticItemStatus);
             this.ribbonStatusBar.Location = new System.Drawing.Point(0, 638);
             this.ribbonStatusBar.Name = "ribbonStatusBar";
             this.ribbonStatusBar.Ribbon = this.ribbon;
             this.ribbonStatusBar.Size = new System.Drawing.Size(1152, 24);
+            // Modern status bar ayarları
+            this.ribbonStatusBar.ShowSizeGrip = true;
             // 
             // xtraTabbedMdiManager1
             // 
@@ -325,6 +352,7 @@
         private DevExpress.XtraBars.BarButtonItem btnDoviz;
         private DevExpress.XtraBars.BarButtonItem btnYardim;
         private DevExpress.XtraBars.BarButtonItem btnHakkimizda;
+        private DevExpress.XtraBars.BarStaticItem barStaticItemStatus;
         private DevExpress.XtraTabbedMdi.XtraTabbedMdiManager xtraTabbedMdiManager1;
         private DevExpress.Utils.WorkspaceManager workspaceManager1;
     }

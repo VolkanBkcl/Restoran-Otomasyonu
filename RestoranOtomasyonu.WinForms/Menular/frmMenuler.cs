@@ -1,4 +1,5 @@
 ﻿using DevExpress.XtraEditors;
+using DevExpress.XtraGrid.Export;
 using RestoranOtomasyonu.Entities.Models;
 using System;
 using System.Collections.Generic;
@@ -27,6 +28,32 @@ namespace RestoranOtomasyonu.WinForms.Menular
         {
             context.SaveChanges();
             gridView1.RefreshData();
+            MessageBox.Show("Değişiklikler kaydedildi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private void txtAra_EditValueChanged(object sender, EventArgs e)
+        {
+            if (string.IsNullOrEmpty(txtAra.Text))
+            {
+                gridView1.ActiveFilterString = "";
+                return;
+            }
+
+            string filterString = $"[MenuAdi] LIKE '%{txtAra.Text}%' OR [Aciklama] LIKE '%{txtAra.Text}%'";
+            gridView1.ActiveFilterString = filterString;
+        }
+
+        private void btnExport_Click(object sender, EventArgs e)
+        {
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Filter = "Excel Dosyası|*.xlsx";
+            saveFileDialog.FileName = "Menuler_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".xlsx";
+            
+            if (saveFileDialog.ShowDialog() == DialogResult.OK)
+            {
+                gridControl1.ExportToXlsx(saveFileDialog.FileName);
+                MessageBox.Show("Dosya başarıyla dışa aktarıldı.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
         }
 
         private void btnSil_Click(object sender, EventArgs e)

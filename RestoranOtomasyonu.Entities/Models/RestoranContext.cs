@@ -25,6 +25,10 @@ namespace RestoranOtomasyonu.Entities.Models
 
         public DbSet<MasaHareketleri> MasaHareketleri { get; set; }
 
+        public DbSet<MenuHareketleri> MenuHareketleri { get; set; }
+
+        public DbSet<UrunHareketleri> UrunHareketleri { get; set; }
+
         public DbSet<Masalar> Masalar { get; set; }
 
         public DbSet<OdemeHareketleri> OdemeHareketleri { get; set; }
@@ -32,6 +36,8 @@ namespace RestoranOtomasyonu.Entities.Models
         public DbSet<Roller> Roller { get; set; }
 
         public DbSet<Satislar> Satislar { get; set; }
+
+        public DbSet<Siparisler> Siparisler { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
@@ -44,6 +50,9 @@ namespace RestoranOtomasyonu.Entities.Models
             modelBuilder.Configurations.Add(new SatislarMap());
             modelBuilder.Configurations.Add(new UrunMap());
             modelBuilder.Configurations.Add(new MenuMap());
+            modelBuilder.Configurations.Add(new MenuHareketleriMap());
+            modelBuilder.Configurations.Add(new UrunHareketleriMap());
+            modelBuilder.Configurations.Add(new SiparislerMap());
         }
 
 

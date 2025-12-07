@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restoran - Masa Siparişi</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <!-- Login/Register Ekranı (İlk Açılış) -->
+    <div id="authScreen" class="auth-container">
+        <div class="auth-split">
+            <!-- Sol Panel: Logo/Resim -->
+            <div class="auth-left">
+                <div class="auth-logo">
+                    <h1>🍽️ Restoran</h1>
+                    <p>Hoş Geldiniz</p>
+                </div>
+            </div>
+            
+            <!-- Sağ Panel: Form -->
+            <div class="auth-right">
+                <div class="auth-tabs" id="authTabsContainer">
+                    <button class="tab-btn active" onclick="showTab('login')">Giriş Yap</button>
+                    <button class="tab-btn" onclick="showTab('register')">Kayıt Ol</button>
+                </div>
+
+                <!-- Login Form -->
+                <div id="loginTab" class="auth-form active">
+                    <h2>Giriş Yap</h2>
+                    <form id="loginForm" onsubmit="handleLogin(event)">
+                        <div class="form-group">
+                            <label>Kullanıcı Adı</label>
+                            <input type="text" id="loginKullaniciAdi" required placeholder="Kullanıcı adınızı girin">
+                        </div>
+                        <div class="form-group">
+                            <label>Parola</label>
+                            <input type="password" id="loginParola" required placeholder="Parolanızı girin">
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="rememberMe">
+                                <span>Beni Hatırla</span>
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Giriş Yap</button>
+                        <div class="form-links">
+                            <a href="#" onclick="showTab('forgotPassword'); return false;">Şifremi Unuttum</a>
+                            <a href="#" onclick="showTab('register'); return false;">Hesabınız yok mu? Kayıt Ol</a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Register Form -->
+                <div id="registerTab" class="auth-form">
+                    <h2>Kayıt Ol</h2>
+                    <form id="registerForm" onsubmit="handleRegister(event)">
+                        <div class="form-group">
+                            <label>Ad Soyad <span class="required">*</span></label>
+                            <input type="text" id="registerAdSoyad" required placeholder="Adınız ve soyadınız">
+                        </div>
+                        <div class="form-group">
+                            <label>Telefon</label>
+                            <input type="tel" id="registerTelefon" placeholder="05XX XXX XX XX">
+                        </div>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="registerEmail" placeholder="ornek@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label>Kullanıcı Adı <span class="required">*</span></label>
+                            <input type="text" id="registerKullaniciAdi" required placeholder="Benzersiz kullanıcı adı">
+                        </div>
+                        <div class="form-group">
+                            <label>Parola <span class="required">*</span></label>
+                            <input type="password" id="registerParola" required placeholder="En az 6 karakter">
+                        </div>
+                        <div class="form-group">
+                            <label>Hatırlatma Sorusu</label>
+                            <select id="registerHatirlatmaSorusu" class="form-select">
+                                <option value="">Seçiniz...</option>
+                                <option value="İlk evcil hayvanınızın adı neydi?">İlk evcil hayvanınızın adı neydi?</option>
+                                <option value="En sevdiğiniz renk nedir?">En sevdiğiniz renk nedir?</option>
+                                <option value="Doğum yeriniz neresi?">Doğum yeriniz neresi?</option>
+                                <option value="Annene kızlık soyadı nedir?">Annene kızlık soyadı nedir?</option>
+                                <option value="En sevdiğiniz yemek nedir?">En sevdiğiniz yemek nedir?</option>
+                            </select>
+                            <input type="text" id="registerHatirlatmaSorusuCustom" placeholder="Veya kendi sorunuzu yazın" style="margin-top: 10px; display: none;">
+                        </div>
+                        <div class="form-group">
+                            <label>Cevap</label>
+                            <input type="text" id="registerCevap" placeholder="Hatırlatma sorusunun cevabı">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Kayıt Ol</button>
+                        <div class="form-links">
+                            <a href="#" onclick="showTab('login'); return false;">← Geri Dön (Giriş Yap)</a>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Forgot Password Form -->
+                <div id="forgotPasswordTab" class="auth-form">
+                    <h2>Şifremi Unuttum</h2>
+                    <form id="forgotPasswordForm" onsubmit="handleForgotPassword(event)">
+                        <div class="form-group">
+                            <label>Kullanıcı Adı <span class="required">*</span></label>
+                            <input type="text" id="forgotKullaniciAdi" required placeholder="Kullanıcı adınızı girin">
+                        </div>
+                        <div id="securityQuestionGroup" class="form-group" style="display: none;">
+                            <label>Güvenlik Sorusu</label>
+                            <p id="securityQuestion" class="security-question"></p>
+                            <input type="text" id="forgotCevap" placeholder="Cevabınızı girin" required>
+                        </div>
+                        <div id="newPasswordGroup" class="form-group" style="display: none;">
+                            <label>Yeni Parola <span class="required">*</span></label>
+                            <input type="password" id="newPassword" placeholder="Yeni parolanızı girin" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" id="forgotPasswordBtn">Devam Et</button>
+                        <div class="form-links">
+                            <a href="#" onclick="showTab('login'); return false;">← Geri Dön (Giriş Yap)</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sipariş Ekranı (Giriş Sonrası) -->
+    <div id="orderScreen" class="order-container" style="display: none;">
+        <header class="order-header">
+            <h1>🍽️ Restoran Sipariş</h1>
+            <div class="user-info">
+                <span id="userName"></span>
+                <button onclick="logout()" class="btn btn-secondary">Çıkış</button>
+            </div>
+        </header>
+
+        <div class="order-tabs">
+            <button class="tab-btn active" onclick="showOrderTab('menu')">📋 Menü</button>
+            <button class="tab-btn" onclick="showOrderTab('myAccount')">👤 Benim Hesabım</button>
+            <button class="tab-btn" onclick="showOrderTab('tableSummary')">📊 Masa Özeti</button>
+        </div>
+
+        <!-- Sekme 1: Menü -->
+        <div id="menuTab" class="order-tab-content active">
+            <div class="menu-filter">
+                <input type="text" id="menuSearch" placeholder="🔍 Ürün ara..." onkeyup="filterMenu()">
+                <select id="menuCategoryFilter" onchange="filterMenu()">
+                    <option value="">Tüm Kategoriler</option>
+                </select>
+            </div>
+            <div class="menu-grid" id="menuGrid">
+                <!-- Ürünler buraya yüklenecek -->
+            </div>
+            <div class="cart-section">
+                <h3>🛒 Sepetim <span id="cartCount" class="cart-badge">0</span></h3>
+                <div id="cartItems" class="cart-items-container">
+                    <p class="empty-cart">Sepetiniz boş</p>
+                </div>
+                <div class="cart-summary">
+                    <div class="cart-row">
+                        <span>Ara Toplam:</span>
+                        <span id="cartSubtotal">0.00</span> ₺
+                    </div>
+                    <div class="cart-row">
+                        <span>KDV:</span>
+                        <span id="cartTax">0.00</span> ₺
+                    </div>
+                    <div class="cart-total">
+                        <strong>Toplam: <span id="cartTotal">0.00</span> ₺</strong>
+                    </div>
+                </div>
+                <button onclick="submitOrder()" class="btn btn-success btn-large" id="submitOrderBtn" disabled>
+                    <span>📦 Sipariş Ver</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sekme 2: Benim Hesabım -->
+        <div id="myAccountTab" class="order-tab-content">
+            <div class="account-header">
+                <h2>👤 Benim Hesabım</h2>
+                <div class="user-profile">
+                    <div class="profile-avatar">
+                        <span id="userInitials"></span>
+                    </div>
+                    <div class="profile-info">
+                        <h3 id="userFullName"></h3>
+                        <p id="userEmail"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="orders-section">
+                <h3>📋 Siparişlerim</h3>
+                <div class="orders-filter">
+                    <button class="filter-btn active" onclick="filterMyOrders('all')">Tümü</button>
+                    <button class="filter-btn" onclick="filterMyOrders('pending')">Bekleyen</button>
+                    <button class="filter-btn" onclick="filterMyOrders('paid')">Ödenen</button>
+                </div>
+                <div id="myOrdersList" class="orders-list">
+                    <!-- Kullanıcının siparişleri buraya yüklenecek -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Sekme 3: Masa Özeti -->
+        <div id="tableSummaryTab" class="order-tab-content">
+            <div class="table-summary-header">
+                <h2>📊 Masa Özeti</h2>
+                <div class="table-info">
+                    <span class="table-badge">Masa #<span id="tableNumber"></span></span>
+                </div>
+            </div>
+            <div class="summary-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Kişi Sayısı</span>
+                        <span class="stat-value" id="personCount">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Sipariş Sayısı</span>
+                        <span class="stat-value" id="orderCount">0</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-info">
+                        <span class="stat-label">Toplam Tutar</span>
+                        <span class="stat-value" id="tableTotalPreview">0.00 ₺</span>
+                    </div>
+                </div>
+            </div>
+            <div class="orders-section">
+                <h3>Masadaki Siparişler</h3>
+                <div id="tableOrdersList" class="orders-list">
+                    <!-- Masadaki tüm siparişler buraya yüklenecek -->
+                </div>
+            </div>
+            <div class="table-total">
+                <div class="total-breakdown">
+                    <div class="total-row">
+                        <span>Ara Toplam:</span>
+                        <span id="tableSubtotal">0.00</span> ₺
+                    </div>
+                    <div class="total-row">
+                        <span>KDV:</span>
+                        <span id="tableTax">0.00</span> ₺
+                    </div>
+                </div>
+                <div class="total-final">
+                    <strong>Genel Toplam: <span id="tableTotal">0.00</span> ₺</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+        <p>Yükleniyor...</p>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="/js/app.js"></script>
+</body>
+</html>
+
