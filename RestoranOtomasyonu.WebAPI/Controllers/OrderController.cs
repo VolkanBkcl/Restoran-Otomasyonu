@@ -49,29 +49,19 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
                         {
                             decimal birimFiyat = 0;
 
-                            // Ürün veya Menü fiyatını al
+                            // Ürün veya Menü fiyatını al (BirimFiyati2 müşteri fiyatı)
                             if (item.UrunId > 0)
                             {
-                                var fiyatQuery = "SELECT BirimFiyati FROM Urun WHERE Id = @Id";
+                                var fiyatQuery = "SELECT BirimFiyati2 FROM Urun WHERE Id = @Id";
                                 using (var cmd = new SqlCommand(fiyatQuery, connection, transaction))
                                 {
                                     cmd.Parameters.AddWithValue("@Id", item.UrunId);
                                     var result = cmd.ExecuteScalar();
-                                    if (result != null)
+                                    if (result != null && result != DBNull.Value)
                                         birimFiyat = Convert.ToDecimal(result);
                                 }
                             }
-                            else if (item.MenuId > 0)
-                            {
-                                var fiyatQuery = "SELECT BirimFiyati FROM Menu WHERE Id = @Id";
-                                using (var cmd = new SqlCommand(fiyatQuery, connection, transaction))
-                                {
-                                    cmd.Parameters.AddWithValue("@Id", item.MenuId);
-                                    var result = cmd.ExecuteScalar();
-                                    if (result != null)
-                                        birimFiyat = Convert.ToDecimal(result);
-                                }
-                            }
+                            // Not: Menu tablosu kategori tablosu, ürün fiyatı Urun tablosundan alınır
 
                             var tutar = birimFiyat * item.Miktari;
                             toplamTutar += tutar;
@@ -219,10 +209,10 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
         }
 
         /// <summary>
-        /// Kullanıcının kendi siparişlerini getir
+        /// Kullanıcının kendi siparişlerini getir (opsiyonel masaId filtresi)
         /// </summary>
         [HttpGet("my/{kullaniciId}")]
-        public IActionResult GetMyOrders(int kullaniciId)
+        public IActionResult GetMyOrders(int kullaniciId, [FromQuery] int? masaId = null)
         {
             try
             {
@@ -237,12 +227,22 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
                                          m.MasaAdi
                                  FROM Siparisler s
                                  LEFT JOIN Masalar m ON s.MasaId = m.Id
-                                 WHERE s.KullaniciId = @KullaniciId
-                                 ORDER BY s.Tarih DESC";
+                                 WHERE s.KullaniciId = @KullaniciId";
+                    
+                    if (masaId.HasValue && masaId.Value > 0)
+                    {
+                        query += " AND s.MasaId = @MasaId";
+                    }
+                    
+                    query += " ORDER BY s.Tarih DESC";
 
                     using (var cmd = new SqlCommand(query, connection))
                     {
                         cmd.Parameters.AddWithValue("@KullaniciId", kullaniciId);
+                        if (masaId.HasValue && masaId.Value > 0)
+                        {
+                            cmd.Parameters.AddWithValue("@MasaId", masaId.Value);
+                        }
 
                         using (var reader = cmd.ExecuteReader())
                         {
@@ -272,6 +272,54 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "Siparişler getirilirken hata oluştu.", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Masa özeti - Masadaki tüm siparişlerin özeti (SignalR için hazır)
+        /// </summary>
+        [HttpGet("table/{masaId}/summary")]
+        public IActionResult GetTableSummary(int masaId)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    var query = @"SELECT 
+                                    COUNT(DISTINCT s.KullaniciId) as KullaniciSayisi,
+                                    COUNT(s.Id) as SiparisSayisi,
+                                    SUM(CASE WHEN s.SiparisDurumu IN (0, 1, 2) THEN s.NetTutar ELSE 0 END) as ToplamTutar
+                                 FROM Siparisler s
+                                 WHERE s.MasaId = @MasaId";
+
+                    using (var cmd = new SqlCommand(query, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@MasaId", masaId);
+
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                var summary = new
+                                {
+                                    kullaniciSayisi = reader.GetInt32(reader.GetOrdinal("KullaniciSayisi")),
+                                    siparisSayisi = reader.GetInt32(reader.GetOrdinal("SiparisSayisi")),
+                                    toplamTutar = reader.IsDBNull(reader.GetOrdinal("ToplamTutar")) ? 0 : reader.GetDecimal(reader.GetOrdinal("ToplamTutar"))
+                                };
+
+                                return Ok(new { success = true, data = summary });
+                            }
+                        }
+                    }
+                }
+
+                return Ok(new { success = true, data = new { kullaniciSayisi = 0, siparisSayisi = 0, toplamTutar = 0 } });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Masa özeti getirilirken hata oluştu.", error = ex.Message });
             }
         }
 
@@ -369,6 +417,89 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Sipariş iptal et (sadece kendi siparişini iptal edebilir)
+        /// </summary>
+        [HttpPost("cancel/{siparisId}")]
+        public async Task<IActionResult> CancelOrder(int siparisId, [FromBody] CancelOrderRequest request)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+                    var transaction = connection.BeginTransaction();
+
+                    try
+                    {
+                        // Sipariş bilgilerini al
+                        var getQuery = "SELECT KullaniciId, SiparisDurumu, OdemeDurumu FROM Siparisler WHERE Id = @Id";
+                        int kullaniciId = 0;
+                        int siparisDurumu = 0;
+                        int odemeDurumu = 0;
+
+                        using (var cmd = new SqlCommand(getQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@Id", siparisId);
+                            using (var reader = cmd.ExecuteReader())
+                            {
+                                if (!reader.Read())
+                                {
+                                    transaction.Rollback();
+                                    return NotFound(new { message = "Sipariş bulunamadı." });
+                                }
+                                kullaniciId = reader.GetInt32(reader.GetOrdinal("KullaniciId"));
+                                siparisDurumu = reader.GetInt32(reader.GetOrdinal("SiparisDurumu"));
+                                odemeDurumu = reader.GetInt32(reader.GetOrdinal("OdemeDurumu"));
+                            }
+                        }
+
+                        // Yetki kontrolü - sadece kendi siparişini iptal edebilir
+                        if (request.KullaniciId != kullaniciId)
+                        {
+                            transaction.Rollback();
+                            return Forbid("Başkasının siparişini iptal edemezsiniz.");
+                        }
+
+                        // Ödeme kontrolü - ödenmiş sipariş iptal edilemez
+                        if (odemeDurumu == 1 || odemeDurumu == 2)
+                        {
+                            transaction.Rollback();
+                            return BadRequest(new { message = "Ödenmiş sipariş iptal edilemez." });
+                        }
+
+                        // Sipariş durumunu İptal Edildi (4) olarak güncelle
+                        var updateQuery = "UPDATE Siparisler SET SiparisDurumu = 4 WHERE Id = @Id";
+                        using (var cmd = new SqlCommand(updateQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@Id", siparisId);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        transaction.Commit();
+
+                        // SignalR bildirimi
+                        await _hubContext.Clients.All.SendAsync("OrderCancelled", new
+                        {
+                            siparisId = siparisId,
+                            masaId = 0 // MasaId'yi almak için ek sorgu gerekebilir
+                        });
+
+                        return Ok(new { success = true, message = "Sipariş iptal edildi." });
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Sipariş iptal edilirken hata oluştu.", error = ex.Message });
+            }
+        }
+
         private string GenerateSatisKodu()
         {
             return DateTime.Now.ToString("yyyyMMddHHmmss") + new Random().Next(100, 999).ToString();
@@ -397,6 +528,11 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
         public int KullaniciId { get; set; }
         public string SatisKodu { get; set; }
         public string OdemeTuru { get; set; }
+    }
+
+    public class CancelOrderRequest
+    {
+        public int KullaniciId { get; set; }
     }
 }
 

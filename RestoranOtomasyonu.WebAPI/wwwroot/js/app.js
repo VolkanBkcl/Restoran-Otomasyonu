@@ -187,26 +187,87 @@ function showOrderTab(tabName) {
 
     // İlgili verileri yükle
     if (tabName === 'myAccount') {
+        stopTableSummaryUpdates();
         loadMyOrders();
     } else if (tabName === 'tableSummary') {
         loadTableOrders();
+        startTableSummaryUpdates(); // Periyodik güncelleme başlat
+    } else {
+        stopTableSummaryUpdates();
     }
 }
 
 // ========== MENU FUNCTIONS ==========
 
+let categories = [];
+let currentCategoryId = null;
+let allMenuItems = [];
+
 async function loadMenu() {
     showLoading(true);
     try {
-        const response = await fetch(`${API_BASE_URL}/api/menu`);
+        // Önce kategorileri yükle
+        const categoriesResponse = await fetch(`${API_BASE_URL}/api/menu/categories`);
+        const categoriesData = await categoriesResponse.json();
+
+        if (categoriesData.success) {
+            categories = categoriesData.data;
+            displayCategories(categories);
+            
+            // İlk kategoriyi seç ve ürünlerini yükle
+            if (categories.length > 0) {
+                currentCategoryId = categories[0].id;
+                await loadProductsByCategory(currentCategoryId);
+            }
+        } else {
+            showToast('Kategoriler yüklenemedi!', 'error');
+        }
+    } catch (error) {
+        showToast('Bir hata oluştu: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function displayCategories(cats) {
+    const categoryTabs = document.getElementById('categoryTabs');
+    categoryTabs.innerHTML = '';
+    
+    if (cats.length === 0) {
+        return;
+    }
+
+    cats.forEach((category, index) => {
+        const categoryBtn = document.createElement('button');
+        categoryBtn.className = 'category-btn' + (index === 0 ? ' active' : '');
+        categoryBtn.textContent = `${category.menuAdi} (${category.urunSayisi})`;
+        categoryBtn.onclick = () => selectCategory(category.id);
+        categoryTabs.appendChild(categoryBtn);
+    });
+}
+
+async function selectCategory(categoryId) {
+    currentCategoryId = categoryId;
+    
+    // Kategori butonlarını güncelle
+    document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+    
+    // Ürünleri yükle
+    await loadProductsByCategory(categoryId);
+}
+
+async function loadProductsByCategory(categoryId) {
+    showLoading(true);
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/menu/products/${categoryId}`);
         const data = await response.json();
 
         if (data.success) {
+            allMenuItems = data.data; // Filtreleme için sakla
             displayMenu(data.data);
-            // Kategorileri filtre dropdown'una ekle (eğer varsa)
-            // Bu kısım API'den kategori listesi gelirse eklenebilir
         } else {
-            showToast('Menü yüklenemedi!', 'error');
+            showToast('Ürünler yüklenemedi!', 'error');
         }
     } catch (error) {
         showToast('Bir hata oluştu: ' + error.message, 'error');
@@ -216,26 +277,38 @@ async function loadMenu() {
 }
 
 function displayMenu(items) {
-    allMenuItems = items; // Filtreleme için sakla
     const menuGrid = document.getElementById('menuGrid');
     menuGrid.innerHTML = '';
 
     if (items.length === 0) {
-        menuGrid.innerHTML = '<p class="empty-cart">Ürün bulunamadı.</p>';
+        menuGrid.innerHTML = '<p class="empty-cart">Bu kategoride ürün bulunamadı.</p>';
         return;
     }
 
     items.forEach(item => {
         const menuItem = document.createElement('div');
         menuItem.className = 'menu-item';
-        const itemName = (item.urunAdi || item.menuAdi || 'Ürün').replace(/'/g, "\\'");
+        const itemName = (item.urunAdi || item.menuAdi || 'Ürün').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        const price = parseFloat(item.birimFiyati || 0);
+        
+        // Resim yolu kontrolü - eğer dosya yolu varsa API base URL'i ekle
+        let imageSrc = item.resim || '';
+        if (imageSrc && !imageSrc.startsWith('http') && !imageSrc.startsWith('data:')) {
+            // Dosya yolu ise, API base URL'ini ekle
+            imageSrc = `${API_BASE_URL}/${imageSrc}`;
+        }
+        if (!imageSrc || imageSrc === '') {
+            imageSrc = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y4ZjlmYSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5SZXNpbSBZb2s8L3RleHQ+PC9zdmc+';
+        }
+        
         menuItem.innerHTML = `
-            <img src="${item.resim || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y4ZjlmYSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5SZXNpbSBZb2s8L3RleHQ+PC9zdmc+'}" 
+            <img src="${imageSrc}" 
                  alt="${itemName}" 
-                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y4ZjlmYSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5SZXNpbSBZb2s8L3RleHQ+PC9zdmc+'};">
+                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y4ZjlmYSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5SZXNpbSBZb2s8L3RleHQ+PC9zdmc+'">
             <h3>${itemName}</h3>
-            <div class="price">${item.birimFiyati.toFixed(2)} ₺</div>
-            <button class="btn btn-primary" onclick="addToCart(${item.id}, ${item.isMenu ? 'null' : item.id}, ${item.isMenu ? item.id : 'null'}, '${itemName}', ${item.birimFiyati})">
+            ${item.aciklama ? `<p class="menu-description">${item.aciklama}</p>` : ''}
+            <div class="price">${price.toFixed(2)} ₺</div>
+            <button class="btn btn-primary" onclick="addToCart(${item.id}, ${item.id}, null, '${itemName}', ${price})">
                 🛒 Sepete Ekle
             </button>
         `;
@@ -244,20 +317,20 @@ function displayMenu(items) {
 }
 
 function addToCart(id, urunId, menuId, name, price) {
-    const existingItem = cart.find(item => 
-        (item.urunId && item.urunId === urunId) || 
-        (item.menuId && item.menuId === menuId)
-    );
+    // urunId varsa urunId kullan, yoksa id'yi urunId olarak kullan
+    const actualUrunId = urunId || id;
+    
+    const existingItem = cart.find(item => item.urunId === actualUrunId);
 
     if (existingItem) {
         existingItem.miktari++;
     } else {
         cart.push({
             id: id,
-            urunId: urunId || 0,
+            urunId: actualUrunId,
             menuId: menuId || 0,
             name: name,
-            price: price,
+            price: parseFloat(price),
             miktari: 1
         });
     }
@@ -377,11 +450,13 @@ async function loadMyOrders() {
 
     showLoading(true);
     try {
-        const response = await fetch(`${API_BASE_URL}/api/order/my/${currentUser.id}`);
+        // Sadece bu masadaki siparişleri getir
+        const response = await fetch(`${API_BASE_URL}/api/order/my/${currentUser.id}?masaId=${currentMasaId}`);
         const data = await response.json();
 
         if (data.success) {
-            displayMyOrders(data.data);
+            allMyOrders = data.data; // Tüm siparişleri sakla
+            displayFilteredMyOrders(); // Filtrelenmiş siparişleri göster
         } else {
             showToast('Siparişler yüklenemedi!', 'error');
         }
@@ -397,7 +472,10 @@ function displayMyOrders(orders) {
     ordersList.innerHTML = '';
 
     if (orders.length === 0) {
-        ordersList.innerHTML = '<p>Henüz siparişiniz yok.</p>';
+        const emptyMessage = myOrdersFilter === 'all' ? 'Henüz siparişiniz yok.' : 
+                            myOrdersFilter === 'pending' ? 'Bekleyen siparişiniz yok.' : 
+                            'Ödenen siparişiniz yok.';
+        ordersList.innerHTML = `<p>${emptyMessage}</p>`;
         return;
     }
 
@@ -407,7 +485,9 @@ function displayMyOrders(orders) {
         
         const odemeDurumu = getOdemeDurumuText(order.odemeDurumu);
         const odemeDurumuClass = getOdemeDurumuClass(order.odemeDurumu);
+        const siparisDurumu = getSiparisDurumuText(order.siparisDurumu);
         const canPay = order.odemeDurumu === 0; // Odenmedi
+        const canCancel = order.siparisDurumu === 0 || order.siparisDurumu === 1; // OnayBekliyor veya Hazirlaniyor
 
         orderCard.innerHTML = `
             <h4>Sipariş #${order.satisKodu}</h4>
@@ -416,23 +496,74 @@ function displayMyOrders(orders) {
                 <span class="order-status ${odemeDurumuClass}">${odemeDurumu}</span>
             </div>
             <div class="order-info">
+                <span>Durum: ${siparisDurumu}</span>
+            </div>
+            <div class="order-info">
                 <span>Tutar: ${order.tutar.toFixed(2)} ₺</span>
                 <span>Net Tutar: ${order.netTutar.toFixed(2)} ₺</span>
             </div>
             <div class="order-info">
                 <span>Tarih: ${new Date(order.tarih).toLocaleString('tr-TR')}</span>
             </div>
-            ${canPay ? `<button onclick="payOrder(${order.id}, '${order.satisKodu}')" class="btn btn-success" style="margin-top: 10px; width: 100%;">Kendi Payımı Öde (${order.netTutar.toFixed(2)} ₺)</button>` : ''}
+            <div class="order-actions">
+                ${canPay ? `<button onclick="payOrder(${order.id}, '${order.satisKodu}')" class="btn btn-success">Kendi Payımı Öde (${order.netTutar.toFixed(2)} ₺)</button>` : ''}
+                ${canCancel ? `<button onclick="cancelOrder(${order.id}, '${order.satisKodu}')" class="btn btn-danger">Sipariş İptal Et</button>` : ''}
+            </div>
         `;
         ordersList.appendChild(orderCard);
     });
 }
+
+function getSiparisDurumuText(durum) {
+    switch (durum) {
+        case 0: return 'Onay Bekliyor';
+        case 1: return 'Hazırlanıyor';
+        case 2: return 'Hazır';
+        case 3: return 'Teslim Edildi';
+        case 4: return 'İptal Edildi';
+        default: return 'Bilinmiyor';
+    }
+}
+
+async function cancelOrder(siparisId, satisKodu) {
+    if (!confirm(`Sipariş #${satisKodu} iptal edilecek. Emin misiniz?`)) {
+        return;
+    }
+
+    showLoading(true);
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/order/cancel/${siparisId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ kullaniciId: currentUser.id })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showToast('Sipariş iptal edildi!', 'success');
+            loadMyOrders();
+            loadTableOrders();
+        } else {
+            showToast(data.message || 'Sipariş iptal edilemedi!', 'error');
+        }
+    } catch (error) {
+        showToast('Bir hata oluştu: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+let tableOrdersInterval = null;
 
 async function loadTableOrders() {
     if (!currentMasaId) return;
 
     showLoading(true);
     try {
+        // Masa siparişlerini getir
         const response = await fetch(`${API_BASE_URL}/api/order/table/${currentMasaId}`);
         const data = await response.json();
 
@@ -441,10 +572,51 @@ async function loadTableOrders() {
         } else {
             showToast('Masa siparişleri yüklenemedi!', 'error');
         }
+
+        // Masa özetini getir
+        const summaryResponse = await fetch(`${API_BASE_URL}/api/order/table/${currentMasaId}/summary`);
+        const summaryData = await summaryResponse.json();
+
+        if (summaryData.success) {
+            updateTableSummary(summaryData.data);
+        }
     } catch (error) {
         showToast('Bir hata oluştu: ' + error.message, 'error');
     } finally {
         showLoading(false);
+    }
+}
+
+function updateTableSummary(summary) {
+    // Masa özeti istatistiklerini güncelle
+    document.getElementById('personCount').textContent = summary.kullaniciSayisi || 0;
+    document.getElementById('orderCount').textContent = summary.siparisSayisi || 0;
+    
+    // Toplam tutarı hesapla (KDV dahil)
+    const taxRate = 0.20;
+    const total = (summary.toplamTutar || 0) * (1 + taxRate);
+    document.getElementById('tableTotalPreview').textContent = total.toFixed(2) + ' ₺';
+}
+
+// Masa özeti sekmesi açıldığında periyodik güncelleme başlat
+function startTableSummaryUpdates() {
+    if (tableOrdersInterval) {
+        clearInterval(tableOrdersInterval);
+    }
+    
+    // Her 5 saniyede bir güncelle
+    tableOrdersInterval = setInterval(() => {
+        if (document.getElementById('tableSummaryTab').classList.contains('active')) {
+            loadTableOrders();
+        }
+    }, 5000);
+}
+
+// Masa özeti sekmesi kapatıldığında güncellemeyi durdur
+function stopTableSummaryUpdates() {
+    if (tableOrdersInterval) {
+        clearInterval(tableOrdersInterval);
+        tableOrdersInterval = null;
     }
 }
 
@@ -467,7 +639,12 @@ function displayTableOrders(orders) {
     const taxRate = 0.20; // %20 KDV
     const uniqueUsers = new Set();
 
-    orders.forEach(order => {
+    // Sadece onaylanmış siparişleri (OnayBekliyor, Hazirlaniyor, Hazır) say
+    const confirmedOrders = orders.filter(order => 
+        order.siparisDurumu === 0 || order.siparisDurumu === 1 || order.siparisDurumu === 2
+    );
+
+    confirmedOrders.forEach(order => {
         subtotal += order.netTutar;
         uniqueUsers.add(order.kullaniciId || order.kullaniciAdi);
 
@@ -476,12 +653,16 @@ function displayTableOrders(orders) {
         
         const odemeDurumu = getOdemeDurumuText(order.odemeDurumu);
         const odemeDurumuClass = getOdemeDurumuClass(order.odemeDurumu);
+        const siparisDurumu = getSiparisDurumuText(order.siparisDurumu);
 
         orderCard.innerHTML = `
-            <h4>${order.adSoyad || order.kullaniciAdi}</h4>
+            <h4>${order.adSoyad || order.kullaniciAdi || 'Kullanıcı'}</h4>
             <div class="order-info">
                 <span>Sipariş: #${order.satisKodu}</span>
                 <span class="order-status ${odemeDurumuClass}">${odemeDurumu}</span>
+            </div>
+            <div class="order-info">
+                <span>Durum: ${siparisDurumu}</span>
             </div>
             <div class="order-info">
                 <span>Tutar: ${order.tutar.toFixed(2)} ₺</span>
@@ -501,7 +682,7 @@ function displayTableOrders(orders) {
     document.getElementById('tableTax').textContent = tax.toFixed(2);
     document.getElementById('tableTotal').textContent = total.toFixed(2);
     document.getElementById('tableTotalPreview').textContent = total.toFixed(2) + ' ₺';
-    document.getElementById('orderCount').textContent = orders.length;
+    document.getElementById('orderCount').textContent = confirmedOrders.length;
     document.getElementById('personCount').textContent = uniqueUsers.size;
 }
 
@@ -655,12 +836,10 @@ let allMenuItems = [];
 
 function filterMenu() {
     const searchTerm = document.getElementById('menuSearch').value.toLowerCase();
-    const categoryFilter = document.getElementById('menuCategoryFilter').value;
 
     const filtered = allMenuItems.filter(item => {
         const matchesSearch = (item.urunAdi || item.menuAdi || '').toLowerCase().includes(searchTerm);
-        const matchesCategory = !categoryFilter || item.kategoriId == categoryFilter;
-        return matchesSearch && matchesCategory;
+        return matchesSearch;
     });
 
     displayMenu(filtered);
@@ -668,14 +847,36 @@ function filterMenu() {
 
 // ========== ORDER FILTER ==========
 
+let myOrdersFilter = 'all';
+let allMyOrders = [];
+
 function filterMyOrders(filter) {
+    myOrdersFilter = filter;
     const filterButtons = document.querySelectorAll('.filter-btn');
     filterButtons.forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
 
-    // Bu fonksiyon loadMyOrders'dan sonra çağrılacak
-    // Şimdilik sadece UI güncellemesi yapıyoruz
-    loadMyOrders();
+    // Filtrelenmiş siparişleri göster
+    displayFilteredMyOrders();
+}
+
+function displayFilteredMyOrders() {
+    let filtered = allMyOrders;
+
+    if (myOrdersFilter === 'pending') {
+        // Bekleyen: OnayBekliyor (0) veya Hazirlaniyor (1)
+        filtered = allMyOrders.filter(order => 
+            order.siparisDurumu === 0 || order.siparisDurumu === 1
+        );
+    } else if (myOrdersFilter === 'paid') {
+        // Ödenen: OdemeDurumu == Odendi (1 veya 2)
+        filtered = allMyOrders.filter(order => 
+            order.odemeDurumu === 1 || order.odemeDurumu === 2
+        );
+    }
+    // 'all' için tüm siparişler
+
+    displayMyOrders(filtered);
 }
 
 // ========== HELPER FUNCTIONS ==========

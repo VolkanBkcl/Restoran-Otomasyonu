@@ -272,15 +272,14 @@ body {
 }
 
 /* Menu Filter */
-.menu-filter {
+.menu-filters {
     display: flex;
     gap: 15px;
     margin-bottom: 20px;
     flex-wrap: wrap;
 }
 
-.menu-filter input,
-.menu-filter select {
+.menu-filters input {
     flex: 1;
     min-width: 200px;
     padding: 12px;
@@ -289,10 +288,43 @@ body {
     font-size: 1rem;
 }
 
-.menu-filter input:focus,
-.menu-filter select:focus {
+.menu-filters input:focus {
     outline: none;
     border-color: #667eea;
+}
+
+/* Category Tabs */
+.category-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.category-btn {
+    padding: 10px 20px;
+    border: 2px solid #e0e0e0;
+    background: white;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
+    color: #555;
+}
+
+.category-btn:hover {
+    border-color: #667eea;
+    color: #667eea;
+    transform: translateY(-2px);
+}
+
+.category-btn.active {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
 /* Menu Grid */
@@ -328,6 +360,13 @@ body {
 .menu-item h3 {
     margin-bottom: 10px;
     color: #333;
+}
+
+.menu-description {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 8px 0;
+    line-height: 1.4;
 }
 
 .menu-item .price {
@@ -434,6 +473,18 @@ body {
     display: flex;
     justify-content: space-between;
     margin-bottom: 10px;
+}
+
+.order-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+}
+
+.order-actions .btn {
+    flex: 1;
+    min-width: 150px;
 }
 
 .order-card .order-status {
