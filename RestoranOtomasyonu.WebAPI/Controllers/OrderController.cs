@@ -583,6 +583,157 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
         }
 
         /// <summary>
+        /// Blockchain ödeme tamamlandığında çağrılır (Transaction Hash ile)
+        /// </summary>
+        [HttpPost("completePayment")]
+        public async Task<IActionResult> CompletePayment([FromBody] CompletePaymentRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("Blockchain ödeme tamamlama isteği. OrderId: {OrderId}, TxHash: {TxHash}", 
+                    request.OrderId, request.TransactionHash);
+
+                if (request.OrderId <= 0 || string.IsNullOrWhiteSpace(request.TransactionHash))
+                {
+                    return BadRequest(new { success = false, message = "OrderId ve TransactionHash zorunludur." });
+                }
+
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+                    var transaction = connection.BeginTransaction();
+
+                    try
+                    {
+                        // Sipariş bilgilerini al
+                        var getQuery = @"SELECT Id, MasaId, KullaniciId, SatisKodu, NetTutar, OdemeDurumu 
+                                        FROM Siparisler WHERE Id = @Id";
+                        int masaId = 0;
+                        int kullaniciId = 0;
+                        string satisKodu = "";
+                        decimal netTutar = 0;
+                        int odemeDurumu = 0;
+
+                        using (var cmd = new SqlCommand(getQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@Id", request.OrderId);
+                            using (var reader = cmd.ExecuteReader())
+                            {
+                                if (!reader.Read())
+                                {
+                                    transaction.Rollback();
+                                    return NotFound(new { success = false, message = "Sipariş bulunamadı." });
+                                }
+                                masaId = reader.GetInt32(reader.GetOrdinal("MasaId"));
+                                kullaniciId = reader.GetInt32(reader.GetOrdinal("KullaniciId"));
+                                satisKodu = reader.IsDBNull(reader.GetOrdinal("SatisKodu")) ? "" : reader.GetString(reader.GetOrdinal("SatisKodu"));
+                                netTutar = reader.GetDecimal(reader.GetOrdinal("NetTutar"));
+                                odemeDurumu = reader.GetInt32(reader.GetOrdinal("OdemeDurumu"));
+                            }
+                        }
+
+                        // Zaten ödenmiş mi kontrol et
+                        if (odemeDurumu == (int)OdemeDurumu.TumuOdendi || odemeDurumu == (int)OdemeDurumu.KendiOdedi)
+                        {
+                            transaction.Rollback();
+                            return BadRequest(new { success = false, message = "Sipariş zaten ödenmiş." });
+                        }
+
+                        // Transaction Hash doğrulama (opsiyonel - Nethereum ile)
+                        // Not: Nethereum kurulu değilse bu kısım atlanır
+                        bool txValid = true;
+                        try
+                        {
+                            // Basit hash format kontrolü
+                            if (!request.TransactionHash.StartsWith("0x") || request.TransactionHash.Length != 66)
+                            {
+                                _logger.LogWarning("Geçersiz transaction hash formatı: {TxHash}", request.TransactionHash);
+                                txValid = false;
+                            }
+                        }
+                        catch (Exception txEx)
+                        {
+                            _logger.LogWarning(txEx, "Transaction hash doğrulama hatası");
+                            // Devam et, hash formatı kontrol edildi
+                        }
+
+                        if (!txValid)
+                        {
+                            transaction.Rollback();
+                            return BadRequest(new { success = false, message = "Geçersiz transaction hash formatı." });
+                        }
+
+                        // Ödeme durumunu güncelle (KendiOdedi - Blockchain)
+                        var updateQuery = @"UPDATE Siparisler 
+                                            SET OdemeDurumu = @OdemeDurumu 
+                                            WHERE Id = @Id";
+                        using (var cmd = new SqlCommand(updateQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@Id", request.OrderId);
+                            cmd.Parameters.AddWithValue("@OdemeDurumu", (int)OdemeDurumu.KendiOdedi);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        // OdemeHareketleri tablosuna blockchain ödeme kaydı ekle
+                        var odemeQuery = @"INSERT INTO OdemeHareketleri 
+                            (SatisKodu, OdemeTuru, Odenen, Aciklama, Tarih)
+                            VALUES 
+                            (@SatisKodu, @OdemeTuru, @Odenen, @Aciklama, @Tarih)";
+
+                        using (var cmd = new SqlCommand(odemeQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@SatisKodu", satisKodu);
+                            cmd.Parameters.AddWithValue("@OdemeTuru", "Blockchain");
+                            cmd.Parameters.AddWithValue("@Odenen", request.Amount > 0 ? request.Amount : netTutar);
+                            cmd.Parameters.AddWithValue("@Aciklama", $"Blockchain Ödeme - TxHash: {request.TransactionHash}");
+                            cmd.Parameters.AddWithValue("@Tarih", DateTime.Now);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        transaction.Commit();
+
+                        _logger.LogInformation("Blockchain ödeme başarıyla tamamlandı. OrderId: {OrderId}, TxHash: {TxHash}", 
+                            request.OrderId, request.TransactionHash);
+
+                        // SignalR bildirimi
+                        await _hubContext.Clients.All.SendAsync("OrderPaid", new
+                        {
+                            siparisId = request.OrderId,
+                            kullaniciId = kullaniciId,
+                            odenenTutar = request.Amount > 0 ? request.Amount : netTutar,
+                            txHash = request.TransactionHash,
+                            odemeTuru = "Blockchain"
+                        });
+
+                        return Ok(new 
+                        { 
+                            success = true, 
+                            message = "Blockchain ödeme başarıyla tamamlandı.",
+                            orderId = request.OrderId,
+                            transactionHash = request.TransactionHash
+                        });
+                    }
+                    catch (Exception innerEx)
+                    {
+                        transaction.Rollback();
+                        _logger.LogError(innerEx, "CompletePayment transaction hatası. OrderId: {OrderId}", request.OrderId);
+                        throw;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "CompletePayment beklenmeyen hata. OrderId: {OrderId}", request?.OrderId);
+                return StatusCode(500, new 
+                { 
+                    success = false,
+                    message = "Ödeme tamamlanırken hata oluştu.", 
+                    error = ex.Message 
+                });
+            }
+        }
+
+        /// <summary>
         /// Blockchain veya nakit ödeme tamamlandığında çağrılır
         /// </summary>
         [HttpPost("finalizePayment")]
@@ -716,6 +867,13 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
     public class CancelOrderRequest
     {
         public int KullaniciId { get; set; }
+    }
+
+    public class CompletePaymentRequest
+    {
+        public int OrderId { get; set; }
+        public string TransactionHash { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
     }
 
     public class FinalizePaymentRequest

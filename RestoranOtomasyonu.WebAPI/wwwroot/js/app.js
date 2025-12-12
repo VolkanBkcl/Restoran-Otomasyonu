@@ -4,6 +4,15 @@ let currentMasaId = null;
 let cart = [];
 let API_BASE_URL = window.location.origin; // API base URL
 
+// Blockchain Configuration (Ganache için)
+const CONTRACT_ADDRESS = "0xYOUR_CONTRACT_ADDRESS"; // Ganache'tan deploy ettikten sonra buraya yapıştır
+const CONTRACT_ABI = [
+    "function payBill(uint256 orderId) payable",
+    "event PaymentReceived(address indexed from, uint256 amount, uint256 indexed orderId, uint256 timestamp)"
+];
+const GANACHE_CHAIN_ID = 1337; // Ganache varsayılan Chain ID (veya 5777)
+const ETH_TO_TL_RATE = 100000; // 1 ETH = 100.000 TL (test için sabit kur)
+
 // Sayfa yüklendiğinde
 document.addEventListener('DOMContentLoaded', function() {
     // URL'den masa ID'sini al
@@ -733,46 +742,251 @@ function displayTableOrders(orders) {
     document.getElementById('personCount').textContent = uniqueUsers.size;
 }
 
+/**
+ * Blockchain ile ödeme yap (MetaMask + Ganache)
+ */
 async function payOrder(siparisId, satisKodu) {
     if (!currentUser) {
         showToast('Lütfen giriş yapın!', 'error');
         return;
     }
 
-    if (!confirm('Kendi payınızı ödemek istediğinize emin misiniz?')) {
+    // Sipariş bilgilerini al
+    let orderAmount = 0;
+    try {
+        const orderResponse = await fetch(`${API_BASE_URL}/api/order/detail/${siparisId}`);
+        const orderData = await orderResponse.json();
+        if (orderData.success) {
+            orderAmount = parseFloat(orderData.data.netTutar || orderData.data.tutar || 0);
+        } else {
+            showToast('Sipariş bilgileri alınamadı!', 'error');
+            return;
+        }
+    } catch (error) {
+        showToast('Sipariş bilgileri alınırken hata: ' + error.message, 'error');
+        return;
+    }
+
+    if (!confirm(`Kendi payınızı Blockchain üzerinden ödemek istediğinize emin misiniz?\n\nTutar: ${orderAmount.toFixed(2)} ₺\n\nMetaMask ile ödeme yapılacaktır.`)) {
         return;
     }
 
     showLoading(true);
 
-    const payData = {
-        kullaniciId: currentUser.id,
-        satisKodu: satisKodu,
-        odemeTuru: 'Nakit'
-    };
-
     try {
-        const response = await fetch(`${API_BASE_URL}/api/order/pay/${siparisId}`, {
+        console.log('=== Blockchain Ödeme Başlatılıyor ===');
+        console.log('Sipariş ID:', siparisId);
+        console.log('Tutar:', orderAmount, 'TL');
+
+        // 1. MetaMask kontrolü
+        if (typeof window.ethereum === 'undefined') {
+            showLoading(false);
+            const errorMsg = 'MetaMask bulunamadı! Lütfen MetaMask eklentisini yükleyin.';
+            console.error(errorMsg);
+            showToast(errorMsg, 'error');
+            alert(errorMsg + '\n\nMetaMask indirme sayfası açılacak...');
+            window.open('https://metamask.io/download/', '_blank');
+            return;
+        }
+
+        console.log('✅ MetaMask bulundu');
+
+        // 2. Cüzdan bağlama izni iste
+        console.log('Cüzdan bağlantısı isteniyor...');
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        
+        if (!accounts || accounts.length === 0) {
+            showLoading(false);
+            const errorMsg = 'Cüzdan bağlantısı reddedildi! Lütfen MetaMask\'ta izin verin.';
+            console.error(errorMsg);
+            showToast(errorMsg, 'error');
+            alert(errorMsg);
+            return;
+        }
+
+        const userAddress = accounts[0];
+        console.log('✅ Cüzdan bağlandı:', userAddress);
+
+        // 3. Ağ kontrolü (Ganache Chain ID kontrolü)
+        console.log('Ağ kontrolü yapılıyor...');
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        const chainIdDecimal = parseInt(chainId, 16);
+        console.log('Mevcut Chain ID:', chainIdDecimal);
+        
+        if (chainIdDecimal !== GANACHE_CHAIN_ID && chainIdDecimal !== 5777) {
+            console.warn('⚠️ Yanlış ağ tespit edildi. Ganache ağına geçiliyor...');
+            showToast('Ganache ağına geçiliyor...', 'info');
+            
+            // Ganache ağına geçmeyi dene
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: `0x${GANACHE_CHAIN_ID.toString(16)}` }]
+                });
+                console.log('✅ Ganache ağına geçildi');
+                // Ağ değişti, tekrar kontrol et
+                const newChainId = await window.ethereum.request({ method: 'eth_chainId' });
+                const newChainIdDecimal = parseInt(newChainId, 16);
+                if (newChainIdDecimal !== GANACHE_CHAIN_ID && newChainIdDecimal !== 5777) {
+                    throw new Error('Ağ değiştirilemedi');
+                }
+            } catch (switchError) {
+                console.log('Ağ değiştirme hatası:', switchError);
+                // Ağ yoksa ekle
+                if (switchError.code === 4902 || switchError.message?.includes('Unrecognized chain')) {
+                    console.log('Ganache ağı ekleniyor...');
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: `0x${GANACHE_CHAIN_ID.toString(16)}`,
+                                chainName: 'Ganache Local',
+                                nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                                rpcUrls: ['http://127.0.0.1:7545'] // Ganache varsayılan port
+                            }]
+                        });
+                        console.log('✅ Ganache ağı eklendi');
+                    } catch (addError) {
+                        showLoading(false);
+                        const errorMsg = `Ganache ağı eklenemedi! Lütfen manuel olarak ekleyin:\n\nNetwork Name: Ganache Local\nRPC URL: http://127.0.0.1:7545\nChain ID: ${GANACHE_CHAIN_ID}\nCurrency: ETH`;
+                        console.error(errorMsg, addError);
+                        showToast('Ganache ağı eklenemedi!', 'error');
+                        alert(errorMsg);
+                        return;
+                    }
+                } else {
+                    showLoading(false);
+                    const errorMsg = `Yanlış ağ! Ganache ağına bağlanın (Chain ID: ${GANACHE_CHAIN_ID} veya 5777).\n\nŞu anki Chain ID: ${chainIdDecimal}`;
+                    console.error(errorMsg);
+                    showToast('Yanlış ağ! Ganache\'a bağlanın.', 'error');
+                    alert(errorMsg);
+                    return;
+                }
+            }
+        } else {
+            console.log('✅ Doğru ağ (Ganache)');
+        }
+
+        // 4. Provider ve Signer oluştur
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+
+        // 5. TL tutarını ETH'ye çevir
+        const ethAmount = orderAmount / ETH_TO_TL_RATE;
+        const ethAmountWei = ethers.parseEther(ethAmount.toFixed(6));
+
+        console.log(`Ödeme: ${orderAmount.toFixed(2)} ₺ = ${ethAmount.toFixed(6)} ETH`);
+
+        // 6. Kontrat instance'ı oluştur
+        if (CONTRACT_ADDRESS === "0xYOUR_CONTRACT_ADDRESS" || !CONTRACT_ADDRESS || CONTRACT_ADDRESS.length < 10) {
+            showLoading(false);
+            const errorMsg = 'Kontrat adresi ayarlanmamış!\n\nLütfen app.js dosyasında CONTRACT_ADDRESS değişkenini Ganache\'tan deploy ettiğiniz kontrat adresi ile güncelleyin.';
+            console.error(errorMsg);
+            showToast('Kontrat adresi ayarlanmamış!', 'error');
+            alert(errorMsg);
+            return;
+        }
+
+        console.log('✅ Kontrat adresi:', CONTRACT_ADDRESS);
+        console.log('Kontrat instance oluşturuluyor...');
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        console.log('✅ Kontrat instance oluşturuldu');
+
+        // 7. payBill fonksiyonunu çağır
+        console.log('payBill fonksiyonu çağrılıyor...');
+        console.log('OrderId:', siparisId);
+        console.log('ETH Amount (Wei):', ethAmountWei.toString());
+        showToast('MetaMask\'ta işlemi onaylayın...', 'info');
+        
+        const tx = await contract.payBill(siparisId, {
+            value: ethAmountWei,
+            gasLimit: 300000 // Ganache için yeterli
+        });
+
+        console.log('Transaction gönderildi:', tx.hash);
+        showToast(`İşlem gönderildi: ${tx.hash.substring(0, 10)}...`, 'info');
+
+        // 8. İşlemin onaylanmasını bekle
+        showToast('İşlem onaylanıyor...', 'info');
+        const receipt = await tx.wait();
+        
+        console.log('Transaction onaylandı:', receipt);
+        
+        if (receipt.status === 1) {
+            // 9. Backend'e transaction hash'i gönder
+            await completePaymentOnBackend(siparisId, receipt.hash, orderAmount);
+            
+            showToast(`Ödeme Blockchain Üzerinde Onaylandı! ✅ TX: ${receipt.hash}`, 'success');
+            alert(`Ödeme başarılı!\n\nTransaction Hash: ${receipt.hash}\n\nBlockchain üzerinde kaydedildi.`);
+            
+            // Siparişleri yenile
+            loadMyOrders();
+            loadTableOrders();
+        } else {
+            showToast('İşlem başarısız oldu!', 'error');
+        }
+
+    } catch (error) {
+        console.error('❌ Blockchain ödeme hatası:', error);
+        console.error('Hata detayları:', {
+            code: error.code,
+            message: error.message,
+            data: error.data,
+            stack: error.stack
+        });
+        
+        let errorMessage = 'Ödeme başarısız!';
+        if (error.code === 4001) {
+            errorMessage = 'İşlem kullanıcı tarafından MetaMask\'ta reddedildi.';
+        } else if (error.code === -32603) {
+            errorMessage = 'İşlem hatası. Yeterli ETH bakiyeniz olduğundan emin olun.';
+        } else if (error.message?.includes('user rejected')) {
+            errorMessage = 'İşlem kullanıcı tarafından reddedildi.';
+        } else if (error.message?.includes('insufficient funds')) {
+            errorMessage = 'Yetersiz ETH bakiyesi! Ganache\'tan test ETH alın.';
+        } else if (error.message?.includes('contract')) {
+            errorMessage = 'Kontrat hatası. Kontrat adresinin doğru olduğundan emin olun.';
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+        
+        showLoading(false);
+        showToast(errorMessage, 'error');
+        alert('Blockchain Ödeme Hatası:\n\n' + errorMessage + '\n\nDetaylar için tarayıcı konsolunu (F12) kontrol edin.');
+    } finally {
+        showLoading(false);
+    }
+}
+
+/**
+ * Backend'e ödeme tamamlama isteği gönder
+ */
+async function completePaymentOnBackend(siparisId, txHash, amount) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/order/completePayment`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(payData)
+            body: JSON.stringify({
+                orderId: siparisId,
+                transactionHash: txHash,
+                amount: amount
+            })
         });
 
         const data = await response.json();
-
-        if (data.success) {
-            showToast('Ödeme başarıyla tamamlandı!', 'success');
-            loadMyOrders();
-            loadTableOrders();
-        } else {
-            showToast(data.message || 'Ödeme yapılamadı!', 'error');
+        
+        if (!data.success) {
+            console.error('Backend ödeme tamamlama hatası:', data);
+            throw new Error(data.message || 'Backend ödeme kaydı başarısız');
         }
+        
+        console.log('Backend ödeme kaydı başarılı:', data);
+        return data;
     } catch (error) {
-        showToast('Bir hata oluştu: ' + error.message, 'error');
-    } finally {
-        showLoading(false);
+        console.error('Backend ödeme tamamlama hatası:', error);
+        throw error;
     }
 }
 
