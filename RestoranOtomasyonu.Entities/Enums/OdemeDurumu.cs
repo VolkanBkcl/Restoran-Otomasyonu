@@ -13,8 +13,9 @@ namespace RestoranOtomasyonu.Entities.Enums
     public enum OdemeDurumu
     {
         /// <summary>
-        /// Henüz ödenmedi
+        /// Henüz ödenmedi / ödeme bekleniyor (varsayılan)
         /// </summary>
+        OdemeBekliyor = 0,
         Odenmedi = 0,
 
         /// <summary>

@@ -189,19 +189,19 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
 
     public class RegisterRequest
     {
-        public string AdSoyad { get; set; }
-        public string Telefon { get; set; }
-        public string Email { get; set; }
-        public string KullaniciAdi { get; set; }
-        public string Parola { get; set; }
-        public string HatirlatmaSorusu { get; set; }
-        public string Cevap { get; set; }
+        public string AdSoyad { get; set; } = string.Empty;
+        public string Telefon { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string KullaniciAdi { get; set; } = string.Empty;
+        public string Parola { get; set; } = string.Empty;
+        public string HatirlatmaSorusu { get; set; } = string.Empty;
+        public string Cevap { get; set; } = string.Empty;
     }
 
     public class LoginRequest
     {
-        public string KullaniciAdi { get; set; }
-        public string Parola { get; set; }
+        public string KullaniciAdi { get; set; } = string.Empty;
+        public string Parola { get; set; } = string.Empty;
     }
 }
 

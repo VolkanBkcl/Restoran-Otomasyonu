@@ -12,30 +12,11 @@ namespace RestoranOtomasyonu.Entities.Enums
     /// </summary>
     public enum SiparisDurumu
     {
-        /// <summary>
-        /// Sipariş alındı, beklemede
-        /// </summary>
-        Beklemede = 0,
-
-        /// <summary>
-        /// Mutfakta hazırlanıyor
-        /// </summary>
+        OnayBekliyor = 0,
         Hazirlaniyor = 1,
-
-        /// <summary>
-        /// Hazır, teslim edilmeyi bekliyor
-        /// </summary>
-        Hazir = 2,
-
-        /// <summary>
-        /// Teslim edildi
-        /// </summary>
-        TeslimEdildi = 3,
-
-        /// <summary>
-        /// İptal edildi
-        /// </summary>
-        Iptal = 4
+        TeslimEdildi = 2,
+        Tamamlandi = 3,
+        IptalEdildi = 4
     }
 }
 

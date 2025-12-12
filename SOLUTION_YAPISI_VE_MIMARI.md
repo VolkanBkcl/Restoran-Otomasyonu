@@ -43,7 +43,7 @@ Restoran Otomasyonu/
     ├── Controllers/
     │   ├── AuthController.cs            (Register, Login)
     │   ├── MenuController.cs            (Ürün listesi)
-    │   └── OrderController.cs          (Sipariş CRUD)
+    │   └── .cs          (Sipariş CRUD)
     ├── Hubs/
     │   └── SiparisHub.cs                (SignalR - Real-time sipariş bildirimleri)
     ├── Services/

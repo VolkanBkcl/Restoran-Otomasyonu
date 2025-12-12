@@ -13,11 +13,14 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
     {
         private readonly string _connectionString;
         private readonly IHubContext<SiparisHub> _hubContext;
+        private readonly ILogger<OrderController> _logger;
 
-        public OrderController(IConfiguration configuration, IHubContext<SiparisHub> hubContext)
+        public OrderController(IConfiguration configuration, IHubContext<SiparisHub> hubContext, ILogger<OrderController> logger)
         {
-            _connectionString = "Data source=(localdb)\\MSSQLLocalDB;Initial Catalog=Restoran;Integrated Security=true";
+            _connectionString = configuration.GetConnectionString("DefaultConnection") 
+                ?? "Data source=(localdb)\\MSSQLLocalDB;Initial Catalog=Restoran;Integrated Security=true";
             _hubContext = hubContext;
+            _logger = logger;
         }
 
         /// <summary>
@@ -28,9 +31,20 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
         {
             try
             {
+                _logger.LogInformation("Sipariş oluşturma isteği alındı. MasaId: {MasaId}, KullaniciId: {KullaniciId}, ItemCount: {ItemCount}", 
+                    request?.MasaId, request?.KullaniciId, request?.Items?.Count);
+
+                if (request == null)
+                {
+                    _logger.LogWarning("Request null geldi");
+                    return BadRequest(new { message = "Request body boş olamaz.", success = false });
+                }
+
                 if (request.MasaId <= 0 || request.KullaniciId <= 0 || request.Items == null || request.Items.Count == 0)
                 {
-                    return BadRequest(new { message = "Masa, kullanıcı ve sipariş kalemleri zorunludur." });
+                    _logger.LogWarning("Geçersiz request parametreleri. MasaId: {MasaId}, KullaniciId: {KullaniciId}, Items: {Items}", 
+                        request.MasaId, request.KullaniciId, request.Items?.Count);
+                    return BadRequest(new { message = "Masa, kullanıcı ve sipariş kalemleri zorunludur.", success = false });
                 }
 
                 // Satış kodu oluştur
@@ -76,8 +90,9 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
                             {
                                 cmd.Parameters.AddWithValue("@SatisKodu", satisKodu);
                                 cmd.Parameters.AddWithValue("@MasaId", request.MasaId);
-                                cmd.Parameters.AddWithValue("@MenuId", item.MenuId > 0 ? (object)item.MenuId : DBNull.Value);
-                                cmd.Parameters.AddWithValue("@UrunId", item.UrunId > 0 ? (object)item.UrunId : DBNull.Value);
+                                // MenuId ve UrunId kolonları NOT NULL - 0 gönder
+                                cmd.Parameters.AddWithValue("@MenuId", item.MenuId > 0 ? item.MenuId : 0);
+                                cmd.Parameters.AddWithValue("@UrunId", item.UrunId > 0 ? item.UrunId : 0);
                                 cmd.Parameters.AddWithValue("@Miktari", item.Miktari);
                                 cmd.Parameters.AddWithValue("@BirimMiktari", 1);
                                 cmd.Parameters.AddWithValue("@BirimFiyati", birimFiyat);
@@ -107,8 +122,9 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
                             cmd.Parameters.AddWithValue("@Tutar", toplamTutar);
                             cmd.Parameters.AddWithValue("@IndirimOrani", indirimOrani);
                             cmd.Parameters.AddWithValue("@NetTutar", netTutar);
-                            cmd.Parameters.AddWithValue("@OdemeDurumu", (int)OdemeDurumu.Odenmedi);
-                            cmd.Parameters.AddWithValue("@SiparisDurumu", (int)SiparisDurumu.Beklemede);
+                            // Yeni akış: ödeme bekliyor + onay bekliyor
+                            cmd.Parameters.AddWithValue("@OdemeDurumu", (int)OdemeDurumu.OdemeBekliyor);
+                            cmd.Parameters.AddWithValue("@SiparisDurumu", (int)SiparisDurumu.OnayBekliyor);
                             cmd.Parameters.AddWithValue("@Aciklama", request.Aciklama ?? "");
                             cmd.Parameters.AddWithValue("@Tarih", DateTime.Now);
                             siparisId = (int)cmd.ExecuteScalar();
@@ -136,16 +152,24 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
                             satisKodu = satisKodu
                         });
                     }
-                    catch
+                    catch (Exception innerEx)
                     {
                         transaction.Rollback();
+                        _logger.LogError(innerEx, "Transaction içinde hata oluştu. MasaId: {MasaId}", request.MasaId);
                         throw;
                     }
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Sipariş oluşturulurken hata oluştu.", error = ex.Message });
+                _logger.LogError(ex, "Sipariş oluşturulurken beklenmeyen hata. MasaId: {MasaId}, KullaniciId: {KullaniciId}", 
+                    request?.MasaId, request?.KullaniciId);
+                return StatusCode(500, new { 
+                    success = false,
+                    message = "Sipariş oluşturulurken hata oluştu.", 
+                    error = ex.Message,
+                    stackTrace = ex.StackTrace
+                });
             }
         }
 
@@ -500,9 +524,168 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Sipariş detayını getir (ödeme sayfası için)
+        /// </summary>
+        [HttpGet("detail/{siparisId}")]
+        public IActionResult GetOrderDetail(int siparisId)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+                    var query = @"SELECT s.Id, s.MasaId, s.KullaniciId, s.SatisKodu, s.Tutar, s.IndirimOrani, s.NetTutar,
+                                         s.OdemeDurumu, s.SiparisDurumu, s.Aciklama, s.Tarih,
+                                         m.MasaAdi, k.KullaniciAdi, k.AdSoyad
+                                  FROM Siparisler s
+                                  LEFT JOIN Masalar m ON s.MasaId = m.Id
+                                  LEFT JOIN Kullanicilar k ON s.KullaniciId = k.Id
+                                  WHERE s.Id = @Id";
+
+                    using (var cmd = new SqlCommand(query, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@Id", siparisId);
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                var detail = new
+                                {
+                                    id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                    masaId = reader.GetInt32(reader.GetOrdinal("MasaId")),
+                                    masaAdi = reader.IsDBNull(reader.GetOrdinal("MasaAdi")) ? "" : reader.GetString(reader.GetOrdinal("MasaAdi")),
+                                    kullaniciId = reader.GetInt32(reader.GetOrdinal("KullaniciId")),
+                                    kullaniciAdi = reader.IsDBNull(reader.GetOrdinal("KullaniciAdi")) ? "" : reader.GetString(reader.GetOrdinal("KullaniciAdi")),
+                                    adSoyad = reader.IsDBNull(reader.GetOrdinal("AdSoyad")) ? "" : reader.GetString(reader.GetOrdinal("AdSoyad")),
+                                    satisKodu = reader.IsDBNull(reader.GetOrdinal("SatisKodu")) ? "" : reader.GetString(reader.GetOrdinal("SatisKodu")),
+                                    tutar = reader.GetDecimal(reader.GetOrdinal("Tutar")),
+                                    indirimOrani = reader.GetDecimal(reader.GetOrdinal("IndirimOrani")),
+                                    netTutar = reader.GetDecimal(reader.GetOrdinal("NetTutar")),
+                                    odemeDurumu = reader.GetInt32(reader.GetOrdinal("OdemeDurumu")),
+                                    siparisDurumu = reader.GetInt32(reader.GetOrdinal("SiparisDurumu")),
+                                    aciklama = reader.IsDBNull(reader.GetOrdinal("Aciklama")) ? "" : reader.GetString(reader.GetOrdinal("Aciklama")),
+                                    tarih = reader.GetDateTime(reader.GetOrdinal("Tarih"))
+                                };
+
+                                return Ok(new { success = true, data = detail });
+                            }
+                        }
+                    }
+                }
+
+                return NotFound(new { message = "Sipariş bulunamadı." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Sipariş detay alınırken hata oluştu.", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Blockchain veya nakit ödeme tamamlandığında çağrılır
+        /// </summary>
+        [HttpPost("finalizePayment")]
+        public async Task<IActionResult> FinalizePayment([FromBody] FinalizePaymentRequest request)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+                    var transaction = connection.BeginTransaction();
+
+                    try
+                    {
+                        // Sipariş var mı
+                        var getQuery = "SELECT Id, MasaId, OdemeDurumu FROM Siparisler WHERE Id = @Id";
+                        int masaId = 0;
+                        int odemeDurumu = 0;
+
+                        using (var cmd = new SqlCommand(getQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@Id", request.SiparisId);
+                            using (var reader = cmd.ExecuteReader())
+                            {
+                                if (!reader.Read())
+                                {
+                                    transaction.Rollback();
+                                    return NotFound(new { message = "Sipariş bulunamadı." });
+                                }
+                                masaId = reader.GetInt32(reader.GetOrdinal("MasaId"));
+                                odemeDurumu = reader.GetInt32(reader.GetOrdinal("OdemeDurumu"));
+                            }
+                        }
+
+                        if (odemeDurumu == (int)OdemeDurumu.TumuOdendi)
+                        {
+                            transaction.Rollback();
+                            return BadRequest(new { message = "Sipariş zaten ödenmiş." });
+                        }
+
+                        // Ödeme durumunu güncelle
+                        var updateQuery = @"UPDATE Siparisler 
+                                            SET OdemeDurumu = @OdemeDurumu, SiparisDurumu = @SiparisDurumu 
+                                            WHERE Id = @Id";
+                        using (var cmd = new SqlCommand(updateQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@Id", request.SiparisId);
+                            cmd.Parameters.AddWithValue("@OdemeDurumu", (int)OdemeDurumu.TumuOdendi);
+                            cmd.Parameters.AddWithValue("@SiparisDurumu", (int)SiparisDurumu.OnayBekliyor);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        // Opsiyonel: Tx kaydı eklemek isterseniz OdemeHareketleri tablosunu kullanabilirsiniz
+                        if (!string.IsNullOrWhiteSpace(request.TxHash))
+                        {
+                            var odemeQuery = @"INSERT INTO OdemeHareketleri 
+                                (SatisKodu, OdemeTuru, Odenen, Aciklama, Tarih)
+                                VALUES 
+                                (@SatisKodu, @OdemeTuru, @Odenen, @Aciklama, @Tarih)";
+
+                            using (var cmd = new SqlCommand(odemeQuery, connection, transaction))
+                            {
+                                cmd.Parameters.AddWithValue("@SatisKodu", request.SatisKodu ?? "");
+                                cmd.Parameters.AddWithValue("@OdemeTuru", request.OdemeTuru ?? "Blockchain");
+                                cmd.Parameters.AddWithValue("@Odenen", request.OdenenTutar ?? 0);
+                                cmd.Parameters.AddWithValue("@Aciklama", $"Tx: {request.TxHash}");
+                                cmd.Parameters.AddWithValue("@Tarih", DateTime.Now);
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+
+                        transaction.Commit();
+
+                        await _hubContext.Clients.All.SendAsync("OrderPaid", new
+                        {
+                            siparisId = request.SiparisId,
+                            kullaniciId = 0,
+                            odenenTutar = request.OdenenTutar ?? 0,
+                            txHash = request.TxHash
+                        });
+
+                        return Ok(new { success = true, message = "Ödeme tamamlandı." });
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Ödeme tamamlanırken hata oluştu.", error = ex.Message });
+            }
+        }
+
         private string GenerateSatisKodu()
         {
-            return DateTime.Now.ToString("yyyyMMddHHmmss") + new Random().Next(100, 999).ToString();
+            // SatisKodu veritabanında varchar(15) - max 15 karakter olmalı
+            // Format: yyyyMMddHHmmss (14 karakter) + random 1 karakter = 15 karakter
+            var timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
+            var random = new Random().Next(0, 9).ToString(); // 0-9 arası tek rakam
+            return timestamp + random; // Toplam 15 karakter
         }
     }
 
@@ -511,8 +694,8 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
         public int MasaId { get; set; }
         public int KullaniciId { get; set; }
         public decimal? IndirimOrani { get; set; }
-        public string Aciklama { get; set; }
-        public List<OrderItem> Items { get; set; }
+        public string Aciklama { get; set; } = string.Empty;
+        public List<OrderItem> Items { get; set; } = new();
     }
 
     public class OrderItem
@@ -520,19 +703,28 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
         public int UrunId { get; set; }
         public int MenuId { get; set; }
         public int Miktari { get; set; }
-        public string Aciklama { get; set; }
+        public string Aciklama { get; set; } = string.Empty;
     }
 
     public class PayOrderRequest
     {
         public int KullaniciId { get; set; }
-        public string SatisKodu { get; set; }
-        public string OdemeTuru { get; set; }
+        public string SatisKodu { get; set; } = string.Empty;
+        public string OdemeTuru { get; set; } = string.Empty;
     }
 
     public class CancelOrderRequest
     {
         public int KullaniciId { get; set; }
+    }
+
+    public class FinalizePaymentRequest
+    {
+        public int SiparisId { get; set; }
+        public string? TxHash { get; set; }
+        public string? OdemeTuru { get; set; } = "Blockchain";
+        public decimal? OdenenTutar { get; set; }
+        public string? SatisKodu { get; set; } = string.Empty;
     }
 }
 

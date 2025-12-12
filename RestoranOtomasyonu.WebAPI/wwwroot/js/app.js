@@ -417,6 +417,8 @@ async function submitOrder() {
     };
 
     try {
+        console.log('Sipariş gönderiliyor:', orderData);
+        
         const response = await fetch(`${API_BASE_URL}/api/order/create`, {
             method: 'POST',
             headers: {
@@ -425,19 +427,64 @@ async function submitOrder() {
             body: JSON.stringify(orderData)
         });
 
+        // Response durumunu kontrol et
+        if (!response.ok) {
+            // HTTP hatası (400, 500 vb.)
+            let errorMessage = `HTTP Hatası: ${response.status} ${response.statusText}`;
+            
+            try {
+                // Sunucudan dönen hata mesajını okumaya çalış
+                const errorText = await response.text();
+                console.error('API Hatası (Text):', errorText);
+                
+                // JSON formatında mı kontrol et
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    errorMessage = errorJson.message || errorJson.error || errorText;
+                    console.error('API Hatası (JSON):', errorJson);
+                } catch {
+                    // JSON değilse text olarak kullan
+                    errorMessage = errorText || errorMessage;
+                }
+            } catch (parseError) {
+                console.error('Hata mesajı okunamadı:', parseError);
+            }
+            
+            showToast('Sipariş Hatası: ' + errorMessage, 'error');
+            alert('Sipariş Hatası:\n' + errorMessage);
+            return;
+        }
+
+        // Başarılı response - JSON parse et
         const data = await response.json();
+        console.log('API Yanıtı:', data);
 
         if (data.success) {
-            showToast('Sipariş başarıyla oluşturuldu!', 'success');
-            cart = [];
-            updateCart();
-            loadMyOrders();
-            loadTableOrders();
+            // Yeni akış: ödeme sayfasına yönlendir
+            const siparisId = data.siparisId || data.orderId;
+            if (siparisId) {
+                showToast('Sipariş başarıyla oluşturuldu! Ödeme sayfasına yönlendiriliyorsunuz.', 'success');
+                cart = [];
+                updateCart();
+                window.location.href = `${API_BASE_URL}/masa/odeme.html?orderId=${siparisId}&masaId=${currentMasaId}`;
+            } else {
+                console.error('Sipariş ID dönen veride bulunamadı', data);
+                showToast('Sipariş oluşturuldu ancak ID alınamadı!', 'error');
+                alert('Sipariş oluşturuldu ancak ID alınamadı. Lütfen destekle iletişime geçin.\n\nDönen veri: ' + JSON.stringify(data, null, 2));
+            }
         } else {
-            showToast(data.message || 'Sipariş oluşturulamadı!', 'error');
+            // API başarısız yanıt döndü
+            const errorMsg = data.message || data.error || 'Sipariş oluşturulamadı!';
+            console.error('Sipariş oluşturma hatası:', data);
+            showToast(errorMsg, 'error');
+            alert('Sipariş Hatası:\n' + errorMsg);
         }
     } catch (error) {
-        showToast('Bir hata oluştu: ' + error.message, 'error');
+        // Network hatası veya beklenmeyen hata
+        console.error('Sipariş oluşturma istisnası:', error);
+        const errorMessage = error.message || 'Bilinmeyen bir hata oluştu';
+        showToast('Bir hata oluştu: ' + errorMessage, 'error');
+        alert('Bir hata oluştu:\n' + errorMessage + '\n\nDetay: ' + error.stack);
     } finally {
         showLoading(false);
     }

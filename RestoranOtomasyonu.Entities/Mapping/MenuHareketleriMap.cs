@@ -33,3 +33,9 @@ namespace RestoranOtomasyonu.Entities.Mapping
 
 
 
+
+
+
+
+
+

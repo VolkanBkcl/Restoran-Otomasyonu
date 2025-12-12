@@ -18,15 +18,15 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // CORS - Tüm origin'lere izin ver (geliştirme için)
-// SignalR için Credentials gerekli olduğundan, AllowAnyOrigin yerine WithOrigins kullanıyoruz
+// SignalR için Credentials gerekli olduğundan, AllowAnyOrigin yerine SetIsOriginAllowed kullanıyoruz
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
         policy.SetIsOriginAllowed(_ => true) // Tüm origin'lere izin ver
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials(); // SignalR için gerekli
+              .AllowAnyMethod() // Tüm HTTP metodlarına izin ver
+              .AllowAnyHeader() // Tüm header'lara izin ver
+              .AllowCredentials(); // SignalR için gerekli (cookies, authorization headers)
     });
 });
 
