@@ -3,203 +3,558 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ödeme Ekranı</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <title>Ödeme Ekranı - Blockchain Ödeme</title>
+    <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/ethers@6.10.0/dist/ethers.umd.min.js"></script>
     <style>
-        body { background: #0f172a; color: #e2e8f0; min-height: 100vh; }
-        .card { background: #111827; border: 1px solid #1f2937; }
-        .badge-status { font-size: 0.9rem; }
-        .status-disconnected { color: #ef4444; }
-        .status-connected { color: #22c55e; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .payment-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        .payment-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .payment-header h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+        .payment-header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        .payment-content {
+            padding: 40px;
+        }
+        .order-summary-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border-left: 4px solid #667eea;
+        }
+        .order-summary-card h3 {
+            margin-top: 0;
+            color: #333;
+            font-size: 1.3rem;
+        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+        .summary-item strong {
+            color: #667eea;
+        }
+        .total-amount {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #28a745;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+            text-align: center;
+        }
+        .crypto-equivalent {
+            font-size: 1.3rem;
+            color: #667eea;
+            margin-top: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+        .wallet-status {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 25px 0;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        .wallet-status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #28a745;
+        }
+        .wallet-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #dc3545;
+        }
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 25px;
+        }
+        .btn {
+            width: 100%;
+            padding: 15px 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(40, 167, 69, 0.4);
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .tx-result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 10px;
+            border-left: 4px solid #2196F3;
+            display: none;
+        }
+        .tx-result.show {
+            display: block;
+        }
+        .tx-result.success {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+        .tx-result.error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h2 id="title">Ödeme Ekranı</h2>
-            <p class="text-secondary mb-0" id="orderInfo">Sipariş yükleniyor...</p>
+    <div class="payment-container">
+        <div class="payment-header">
+            <a href="javascript:history.back()" class="back-link">← Geri Dön</a>
+            <h1>💳 Ödeme Ekranı</h1>
+            <p id="orderInfo">Sipariş yükleniyor...</p>
         </div>
-        <a href="/masa/" class="btn btn-outline-light">← Geri</a>
+
+        <div class="payment-content">
+            <!-- Sipariş Özeti -->
+            <div class="order-summary-card">
+                <h3>📋 Sipariş Özeti</h3>
+                <div id="orderSummary">
+                    <div class="summary-item">
+                        <span>Sipariş Kodu:</span>
+                        <strong id="satisKodu">-</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Masa:</span>
+                        <strong id="masaInfo">-</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Durum:</span>
+                        <strong id="odemeDurumu">-</strong>
+                    </div>
+                    <div class="summary-item">
+                        <span>Tarih:</span>
+                        <strong id="siparisTarihi">-</strong>
+                    </div>
+                </div>
+                <div class="total-amount">
+                    Toplam: <span id="totalTl">0.00</span> ₺
+                </div>
+                <div class="crypto-equivalent">
+                    💎 Kripto Karşılığı: <span id="totalEth">0.0000</span> ETH
+                </div>
+            </div>
+
+            <!-- Cüzdan Durumu -->
+            <div id="walletStatus" class="wallet-status disconnected">
+                ⚠️ MetaMask Bağlı Değil
+            </div>
+
+            <!-- Ödeme Butonları -->
+            <div class="btn-group">
+                <button id="btnConnect" class="btn btn-primary">
+                    🔗 MetaMask Bağla
+                </button>
+                <button id="btnPay" class="btn btn-success" disabled>
+                    ✅ Ödemeyi Tamamla (Blockchain)
+                </button>
+                <button id="btnCash" class="btn btn-secondary">
+                    💵 Nakit / Kasada Öde
+                </button>
+            </div>
+
+            <!-- Transaction Sonucu -->
+            <div id="txResult" class="tx-result"></div>
+        </div>
     </div>
 
-    <div class="row g-3">
-        <div class="col-lg-7">
-            <div class="card p-3 mb-3">
-                <h5 class="mb-3">Sipariş Özeti</h5>
-                <div id="orderSummary" class="text-secondary">Yükleniyor...</div>
-            </div>
-        </div>
-        <div class="col-lg-5">
-            <div class="card p-3 mb-3">
-                <h5 class="mb-3">Ödeme</h5>
-                <div class="d-flex justify-content-between">
-                    <span>Toplam Tutar</span>
-                    <strong id="totalTl">- ₺</strong>
-                </div>
-                <div class="d-flex justify-content-between">
-                    <span>Kripto Karşılığı</span>
-                    <strong id="totalEth">- ETH</strong>
-                </div>
-                <hr>
-                <div class="d-flex justify-content-between align-items-center">
-                    <span>Cüzdan Durumu</span>
-                    <span id="walletStatus" class="badge-status status-disconnected">MetaMask bağlı değil</span>
-                </div>
-                <div class="mt-3 d-grid gap-2">
-                    <button id="btnConnect" class="btn btn-outline-warning">MetaMask Bağla</button>
-                    <button id="btnPay" class="btn btn-success" disabled>Ödemeyi Tamamla (Blockchain)</button>
-                    <button id="btnCash" class="btn btn-secondary">Nakit / Kasada Öde</button>
-                </div>
-                <div id="txResult" class="mt-3 small text-secondary"></div>
-            </div>
-        </div>
-    </div>
-</div>
+    <script>
+        const API_BASE_URL = window.location.origin;
+        const CONTRACT_ADDRESS = "0xYOUR_CONTRACT_ADDRESS"; // Ganache'tan deploy ettikten sonra buraya yapıştır
+        const CONTRACT_ABI = [
+            "function payBill(uint256 orderId) payable",
+            "event PaymentReceived(address indexed from, uint256 amount, uint256 indexed orderId, uint256 timestamp)"
+        ];
+        const GANACHE_CHAIN_ID = 1337; // Ganache varsayılan Chain ID (veya 5777)
+        const ETH_TO_TL_RATE = 100000; // 1 ETH = 100.000 TL (test için sabit kur)
 
-<script>
-const API_BASE_URL = window.location.origin;
-const CONTRACT_ADDRESS = "0xYOUR_CONTRACT_ADDRESS";
-const CONTRACT_ABI = [
-    "function payOrder(uint256 masaId, string siparisHash) payable"
-];
+        let provider, signer, connectedAccount;
+        let orderId = null;
+        let orderDetail = null;
+        let ethAmount = "0.001";
 
-let provider, signer, connectedAccount;
-let orderId = null;
-let orderDetail = null;
-let ethAmount = "0.001";
-
-document.addEventListener("DOMContentLoaded", async () => {
-    const params = new URLSearchParams(window.location.search);
-    orderId = params.get("orderId");
-    if (!orderId) {
-        alert("OrderId bulunamadı");
-        return;
-    }
-    await loadOrder();
-    wireUi();
-});
-
-function wireUi() {
-    document.getElementById("btnConnect").onclick = connectWallet;
-    document.getElementById("btnPay").onclick = payWithBlockchain;
-    document.getElementById("btnCash").onclick = payCash;
-}
-
-async function loadOrder() {
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/order/detail/${orderId}`);
-        const data = await res.json();
-        if (!data.success) throw new Error(data.message || "Sipariş alınamadı");
-
-        orderDetail = data.data;
-        document.getElementById("title").innerText = `Ödeme Ekranı - Masa ${orderDetail.masaId}`;
-        document.getElementById("orderInfo").innerText = `Sipariş #${orderDetail.satisKodu} • ${new Date(orderDetail.tarih).toLocaleString('tr-TR')}`;
-
-        const netTl = Number(orderDetail.netTutar || orderDetail.tutar || 0);
-        document.getElementById("totalTl").innerText = `${netTl.toFixed(2)} ₺`;
-
-        // Basit sabit kur: 1 ETH = 55.000 ₺ (test amaçlı)
-        const ethFromRate = netTl / 55000;
-        ethAmount = (ethFromRate || 0.001).toFixed(6);
-        document.getElementById("totalEth").innerText = `${ethAmount} ETH`;
-
-        document.getElementById("orderSummary").innerHTML = `
-            <div>Masa: <strong>${orderDetail.masaAdi || orderDetail.masaId}</strong></div>
-            <div>Tutar: <strong>${netTl.toFixed(2)} ₺</strong></div>
-            <div>Durum: <strong>${getOdemeText(orderDetail.odemeDurumu)}</strong></div>
-        `;
-    } catch (err) {
-        console.error(err);
-        alert("Sipariş yüklenirken hata: " + err.message);
-    }
-}
-
-function getOdemeText(v) {
-    switch (v) {
-        case 0: return "Ödeme Bekliyor";
-        case 1: return "Kendi Ödedi";
-        case 2: return "Tamamı Ödendi";
-        default: return "Bilinmiyor";
-    }
-}
-
-async function connectWallet() {
-    if (!window.ethereum) {
-        alert("Lütfen MetaMask kurun");
-        return;
-    }
-    try {
-        await window.ethereum.request({ method: "eth_requestAccounts" });
-        provider = new ethers.BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
-        connectedAccount = await signer.getAddress();
-        document.getElementById("walletStatus").innerText = `Bağlandı: ${connectedAccount.slice(0,6)}...${connectedAccount.slice(-4)}`;
-        document.getElementById("walletStatus").classList.remove("status-disconnected");
-        document.getElementById("walletStatus").classList.add("status-connected");
-        document.getElementById("btnPay").disabled = false;
-        document.getElementById("btnConnect").style.display = "none";
-    } catch (err) {
-        console.error(err);
-        alert("Cüzdan bağlanamadı: " + err.message);
-    }
-}
-
-async function payWithBlockchain() {
-    if (!signer || !orderDetail) {
-        alert("Önce cüzdan bağlayın");
-        return;
-    }
-    try {
-        const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-        const tx = await contract.payOrder(orderDetail.masaId, orderDetail.satisKodu, {
-            value: ethers.parseEther(ethAmount)
+        document.addEventListener("DOMContentLoaded", async () => {
+            const params = new URLSearchParams(window.location.search);
+            orderId = params.get("orderId");
+            const masaId = params.get("masaId");
+            
+            if (!orderId) {
+                alert("Sipariş ID bulunamadı! Lütfen tekrar deneyin.");
+                window.location.href = `${API_BASE_URL}/masa/${masaId || ''}`;
+                return;
+            }
+            
+            await loadOrder();
+            wireUi();
         });
-        document.getElementById("txResult").innerText = "İşlem gönderildi: " + tx.hash;
-        const receipt = await tx.wait();
-        document.getElementById("txResult").innerText = "Onaylandı: " + receipt.hash;
 
-        await finalizePayment(receipt.hash, "Blockchain");
-        alert("Ödeme başarılı! Siparişlerim sayfasına yönlendiriliyorsunuz.");
-        window.location.href = "/masa/";
-    } catch (err) {
-        console.error(err);
-        alert("Ödeme başarısız: " + err.message);
-    }
-}
+        function wireUi() {
+            document.getElementById("btnConnect").onclick = connectWallet;
+            document.getElementById("btnPay").onclick = payWithBlockchain;
+            document.getElementById("btnCash").onclick = payCash;
+        }
 
-async function payCash() {
-    try {
-        await finalizePayment(null, "Nakit");
-        alert("Ödeme kaydedildi (Nakit). Siparişlerim sayfasına yönlendiriliyorsunuz.");
-        window.location.href = "/masa/";
-    } catch (err) {
-        console.error(err);
-        alert("Nakit ödeme kaydedilemedi: " + err.message);
-    }
-}
+        async function loadOrder() {
+            try {
+                console.log('Sipariş yükleniyor, OrderId:', orderId);
+                const res = await fetch(`${API_BASE_URL}/api/order/detail/${orderId}`);
+                const data = await res.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || "Sipariş alınamadı");
+                }
 
-async function finalizePayment(txHash, odemeTuru) {
-    const body = {
-        siparisId: orderDetail.id,
-        satisKodu: orderDetail.satisKodu,
-        txHash: txHash,
-        odemeTuru: odemeTuru,
-        odenenTutar: orderDetail.netTutar
-    };
+                orderDetail = data.data;
+                console.log('Sipariş detayı:', orderDetail);
 
-    const res = await fetch(`${API_BASE_URL}/api/order/finalizePayment`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-    });
-    const data = await res.json();
-    if (!data.success) {
-        throw new Error(data.message || "FinalizePayment başarısız");
-    }
-}
-</script>
+                // Başlık ve bilgileri güncelle
+                document.getElementById("orderInfo").innerText = `Sipariş #${orderDetail.satisKodu} • Masa ${orderDetail.masaId}`;
+                document.getElementById("satisKodu").textContent = orderDetail.satisKodu || '-';
+                document.getElementById("masaInfo").textContent = orderDetail.masaAdi || `Masa ${orderDetail.masaId}`;
+                document.getElementById("odemeDurumu").textContent = getOdemeText(orderDetail.odemeDurumu);
+                document.getElementById("siparisTarihi").textContent = new Date(orderDetail.tarih).toLocaleString('tr-TR');
+
+                const netTl = Number(orderDetail.netTutar || orderDetail.tutar || 0);
+                document.getElementById("totalTl").textContent = netTl.toFixed(2);
+
+                // ETH karşılığını hesapla
+                const ethFromRate = netTl / ETH_TO_TL_RATE;
+                ethAmount = (ethFromRate || 0.001).toFixed(6);
+                document.getElementById("totalEth").textContent = ethAmount;
+
+                // Eğer zaten ödendiyse butonları devre dışı bırak
+                if (orderDetail.odemeDurumu === 1 || orderDetail.odemeDurumu === 2) {
+                    document.getElementById("btnPay").disabled = true;
+                    document.getElementById("btnCash").disabled = true;
+                    document.getElementById("btnPay").textContent = "✅ Bu sipariş zaten ödendi";
+                    document.getElementById("btnCash").textContent = "✅ Bu sipariş zaten ödendi";
+                }
+
+            } catch (err) {
+                console.error("Sipariş yükleme hatası:", err);
+                alert("Sipariş yüklenirken hata: " + err.message);
+                window.location.href = `${API_BASE_URL}/masa/${orderDetail?.masaId || ''}`;
+            }
+        }
+
+        function getOdemeText(v) {
+            switch (v) {
+                case 0: return "Ödeme Bekliyor";
+                case 1: return "Kendi Ödedi";
+                case 2: return "Tamamı Ödendi";
+                case 3: return "Ödeme Bekliyor";
+                default: return "Bilinmiyor";
+            }
+        }
+
+        async function connectWallet() {
+            if (!window.ethereum) {
+                alert("MetaMask bulunamadı! Lütfen MetaMask eklentisini yükleyin.");
+                window.open('https://metamask.io/download/', '_blank');
+                return;
+            }
+
+            try {
+                document.getElementById("btnConnect").innerHTML = '<span class="loading-spinner"></span>Bağlanıyor...';
+                document.getElementById("btnConnect").disabled = true;
+
+                // Cüzdan bağlama izni iste
+                const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+                
+                if (!accounts || accounts.length === 0) {
+                    throw new Error("Cüzdan bağlantısı reddedildi");
+                }
+
+                // Provider ve Signer oluştur
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+                connectedAccount = await signer.getAddress();
+
+                console.log('✅ Cüzdan bağlandı:', connectedAccount);
+
+                // Ağ kontrolü
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                const chainIdDecimal = parseInt(chainId, 16);
+                
+                if (chainIdDecimal !== GANACHE_CHAIN_ID && chainIdDecimal !== 5777) {
+                    const switchResult = confirm(`Yanlış ağ tespit edildi!\n\nŞu anki Chain ID: ${chainIdDecimal}\nGanache Chain ID: ${GANACHE_CHAIN_ID}\n\nGanache ağına geçmek ister misiniz?`);
+                    
+                    if (switchResult) {
+                        try {
+                            await window.ethereum.request({
+                                method: 'wallet_switchEthereumChain',
+                                params: [{ chainId: `0x${GANACHE_CHAIN_ID.toString(16)}` }]
+                            });
+                        } catch (switchError) {
+                            if (switchError.code === 4902) {
+                                await window.ethereum.request({
+                                    method: 'wallet_addEthereumChain',
+                                    params: [{
+                                        chainId: `0x${GANACHE_CHAIN_ID.toString(16)}`,
+                                        chainName: 'Ganache Local',
+                                        nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+                                        rpcUrls: ['http://127.0.0.1:7545']
+                                    }]
+                                });
+                            }
+                        }
+                    } else {
+                        document.getElementById("btnConnect").innerHTML = '🔗 MetaMask Bağla';
+                        document.getElementById("btnConnect").disabled = false;
+                        return;
+                    }
+                }
+
+                // Cüzdan durumunu güncelle
+                document.getElementById("walletStatus").innerHTML = `✅ Bağlandı: ${connectedAccount.slice(0,6)}...${connectedAccount.slice(-4)}`;
+                document.getElementById("walletStatus").classList.remove("disconnected");
+                document.getElementById("walletStatus").classList.add("connected");
+                
+                document.getElementById("btnPay").disabled = false;
+                document.getElementById("btnConnect").style.display = "none";
+
+            } catch (err) {
+                console.error("Cüzdan bağlama hatası:", err);
+                alert("Cüzdan bağlanamadı: " + err.message);
+                document.getElementById("btnConnect").innerHTML = '🔗 MetaMask Bağla';
+                document.getElementById("btnConnect").disabled = false;
+            }
+        }
+
+        async function payWithBlockchain() {
+            if (!signer || !orderDetail) {
+                alert("Önce MetaMask cüzdanınızı bağlayın!");
+                return;
+            }
+
+            if (CONTRACT_ADDRESS === "0xYOUR_CONTRACT_ADDRESS" || !CONTRACT_ADDRESS || CONTRACT_ADDRESS.length < 10) {
+                alert("Kontrat adresi ayarlanmamış!\n\nLütfen app.js dosyasında CONTRACT_ADDRESS değişkenini Ganache'tan deploy ettiğiniz kontrat adresi ile güncelleyin.");
+                return;
+            }
+
+            if (!confirm(`Blockchain üzerinden ödeme yapmak istediğinize emin misiniz?\n\nTutar: ${orderDetail.netTutar.toFixed(2)} ₺\nETH: ${ethAmount} ETH\n\nMetaMask'ta işlemi onaylayın.`)) {
+                return;
+            }
+
+            try {
+                document.getElementById("btnPay").innerHTML = '<span class="loading-spinner"></span>İşlem gönderiliyor...';
+                document.getElementById("btnPay").disabled = true;
+
+                const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+                
+                console.log('payBill çağrılıyor:', {
+                    orderId: parseInt(orderId),
+                    ethAmount: ethAmount,
+                    ethAmountWei: ethers.parseEther(ethAmount).toString()
+                });
+
+                const tx = await contract.payBill(parseInt(orderId), {
+                    value: ethers.parseEther(ethAmount),
+                    gasLimit: 300000
+                });
+
+                console.log('Transaction gönderildi:', tx.hash);
+                showTxResult(`İşlem gönderildi: ${tx.hash}`, 'info');
+                document.getElementById("btnPay").innerHTML = '<span class="loading-spinner"></span>Onaylanıyor...';
+
+                const receipt = await tx.wait();
+                console.log('Transaction onaylandı:', receipt);
+
+                if (receipt.status === 1) {
+                    // Backend'e ödeme tamamlama isteği gönder
+                    await completePaymentOnBackend(receipt.hash);
+                    
+                    showTxResult(`✅ Ödeme Blockchain Üzerinde Onaylandı!\n\nTransaction Hash: ${receipt.hash}`, 'success');
+                    document.getElementById("btnPay").innerHTML = '✅ Ödeme Tamamlandı';
+                    
+                    setTimeout(() => {
+                        alert("Ödeme başarılı! Siparişlerim sayfasına yönlendiriliyorsunuz.");
+                        const masaId = new URLSearchParams(window.location.search).get("masaId");
+                        window.location.href = `${API_BASE_URL}/masa/${masaId || orderDetail.masaId}`;
+                    }, 2000);
+                } else {
+                    throw new Error("Transaction başarısız oldu");
+                }
+
+            } catch (err) {
+                console.error("Blockchain ödeme hatası:", err);
+                
+                let errorMessage = "Ödeme başarısız!";
+                if (err.code === 4001) {
+                    errorMessage = "İşlem kullanıcı tarafından reddedildi.";
+                } else if (err.message?.includes('insufficient funds')) {
+                    errorMessage = "Yetersiz ETH bakiyesi! Ganache'tan test ETH alın.";
+                } else if (err.message) {
+                    errorMessage = err.message;
+                }
+                
+                showTxResult(`❌ Hata: ${errorMessage}`, 'error');
+                document.getElementById("btnPay").innerHTML = '✅ Ödemeyi Tamamla (Blockchain)';
+                document.getElementById("btnPay").disabled = false;
+            }
+        }
+
+        async function payCash() {
+            if (!confirm(`Nakit ödeme yapmak istediğinize emin misiniz?\n\nTutar: ${orderDetail.netTutar.toFixed(2)} ₺`)) {
+                return;
+            }
+
+            try {
+                document.getElementById("btnCash").innerHTML = '<span class="loading-spinner"></span>Kaydediliyor...';
+                document.getElementById("btnCash").disabled = true;
+
+                await completePaymentOnBackend(null, "Nakit");
+                
+                showTxResult("✅ Nakit ödeme kaydedildi!", 'success');
+                
+                setTimeout(() => {
+                    alert("Ödeme kaydedildi (Nakit). Siparişlerim sayfasına yönlendiriliyorsunuz.");
+                    const masaId = new URLSearchParams(window.location.search).get("masaId");
+                    window.location.href = `${API_BASE_URL}/masa/${masaId || orderDetail.masaId}`;
+                }, 1500);
+
+            } catch (err) {
+                console.error("Nakit ödeme hatası:", err);
+                showTxResult(`❌ Hata: ${err.message}`, 'error');
+                document.getElementById("btnCash").innerHTML = '💵 Nakit / Kasada Öde';
+                document.getElementById("btnCash").disabled = false;
+            }
+        }
+
+        async function completePaymentOnBackend(txHash, odemeTuru = "Blockchain") {
+            try {
+                const endpoint = txHash ? '/api/order/completePayment' : '/api/order/finalizePayment';
+                const body = txHash ? {
+                    orderId: parseInt(orderId),
+                    transactionHash: txHash,
+                    amount: orderDetail.netTutar
+                } : {
+                    siparisId: parseInt(orderId),
+                    satisKodu: orderDetail.satisKodu,
+                    txHash: null,
+                    odemeTuru: odemeTuru,
+                    odenenTutar: orderDetail.netTutar
+                };
+
+                const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await res.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message || "Ödeme kaydı başarısız");
+                }
+
+                console.log('Backend ödeme kaydı başarılı:', data);
+                return data;
+
+            } catch (err) {
+                console.error("Backend ödeme kaydı hatası:", err);
+                throw err;
+            }
+        }
+
+        function showTxResult(message, type) {
+            const txResult = document.getElementById("txResult");
+            txResult.textContent = message;
+            txResult.className = `tx-result show ${type}`;
+        }
+    </script>
 </body>
 </html>
-

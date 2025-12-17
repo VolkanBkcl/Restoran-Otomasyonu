@@ -21,7 +21,17 @@ namespace RestoranOtomasyonu.WinForms.Services
         public SignalRClientService(string apiBaseUrl)
         {
             _hubUrl = $"{apiBaseUrl}/siparisHub";
-            InitializeConnection();
+            try
+            {
+                InitializeConnection();
+            }
+            catch (Exception ex)
+            {
+                // SignalR bağlantısı Ana Menü'nün açılmasını engellemesin
+                System.Diagnostics.Debug.WriteLine($"SignalR InitializeConnection hatası: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine(ex.StackTrace);
+                // İsteğe göre burada kullanıcıya mesaj gösterilebilir, şimdilik sessiz geçiyoruz
+            }
         }
 
         private void InitializeConnection()
@@ -92,7 +102,24 @@ namespace RestoranOtomasyonu.WinForms.Services
         /// </summary>
         public async Task ConnectAsync()
         {
+            // Eğer bağlantı zaten kuruluysa tekrar deneme
             if (_isConnected) return;
+
+            // InitializeConnection başarısız olmuş ve _connection null kalmış olabilir
+            if (_connection == null)
+            {
+                try
+                {
+                    InitializeConnection();
+                }
+                catch (Exception initEx)
+                {
+                    System.Diagnostics.Debug.WriteLine($"SignalR InitializeConnection (ConnectAsync içi) hatası: {initEx.Message}");
+                    System.Diagnostics.Debug.WriteLine(initEx.StackTrace);
+                    // Bağlantı kurulamadıysa burada dur, Ana Menü çalışmaya devam etsin
+                    return;
+                }
+            }
 
             try
             {
