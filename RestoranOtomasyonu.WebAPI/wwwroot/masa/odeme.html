@@ -253,10 +253,90 @@
 
     <script>
         const API_BASE_URL = window.location.origin;
-        const CONTRACT_ADDRESS = "0xYOUR_CONTRACT_ADDRESS"; // Ganache'tan deploy ettikten sonra buraya yapıştır
+        const CONTRACT_ADDRESS = "0xC04b9C087d1C67Eb1edC1e48Af1Af0AbaaBB2318"; // Ganache'tan deploy ettikten sonra buraya yapıştır
         const CONTRACT_ABI = [
-            "function payBill(uint256 orderId) payable",
-            "event PaymentReceived(address indexed from, uint256 amount, uint256 indexed orderId, uint256 timestamp)"
+            {
+                "inputs": [],
+                "name": "hasilatiCek",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": false,
+                        "internalType": "address",
+                        "name": "odeyen",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "miktar",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "siparisId",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "zaman",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "OdemeAlindi",
+                "type": "event"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "siparisId",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "payBill",
+                "outputs": [],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "kasaBakiyesi",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "kasaSahibi",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
         ];
         const GANACHE_CHAIN_ID = 1337; // Ganache varsayılan Chain ID (veya 5777)
         const ETH_TO_TL_RATE = 100000; // 1 ETH = 100.000 TL (test için sabit kur)

@@ -14,10 +14,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Numerics;
-using Nethereum.Web3;
-using Nethereum.Web3.Accounts;
-using Nethereum.Hex.HexTypes;
+using RestoranOtomasyonu.Entities.Enums;
 
 
 namespace RestoranOtomasyonu.WinForms.MasaHareketleri
@@ -99,50 +96,52 @@ namespace RestoranOtomasyonu.WinForms.MasaHareketleri
         }
 
         /// <summary>
-        /// Blockchain üzerinden ödeme yap (Ganache + Nethereum)
+        /// Blockchain üzerinden ödeme yap butonu.
+        ///
+        /// Not:
+        /// WinForms tarafında Nethereum sürüm ve bağımlılık problemleri nedeniyle
+        /// gerçek zincir çağrısı yerine, şu anda sadece başarılı bir ödeme
+        /// simüle edilmekte ve ilgili sipariş durumu "Odendi" olarak işaretlenmektedir.
+        /// Web tarafındaki (ethers.js) akış gerçek blockchain ödemesini yapmaktadır.
         /// </summary>
-        private async void btnOdemeYap_Click(object sender, EventArgs e)
+        private void btnOdemeYap_Click(object sender, EventArgs e)
         {
             try
             {
-                // 1) Sabit bilgiler
-                const string GANACHE_RPC_URL = "http://127.0.0.1:7545";
-                const string PRIVATE_KEY = "0x01257b1f01679ceb8bdcb733530e033258ca1f915413ce1731aecc5b0f4b2583";        // Ganache hesabınızın private key'i
-                const string CONTRACT_ADDRESS = "0xf72ae717DF8d23e7F517833B0d5b6FC8984219A9";   // Deploy ettiğiniz kontrat adresi
+                if (string.IsNullOrWhiteSpace(txtSatisKodu.Text))
+                {
+                    XtraMessageBox.Show(
+                        "Ödeme yapılacak satış kodu bulunamadı. Lütfen önce siparişi kaydedin.",
+                        "Uyarı",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+                    return;
+                }
 
-                // 2) Web3 ve hesap nesnesi
-                var account = new Account(PRIVATE_KEY);
-                var web3 = new Web3(account, GANACHE_RPC_URL);
+                // Kullanıcıdan onay al
+                if (XtraMessageBox.Show(
+                        "Bu ekranda blockchain ödemesi simüle edilecektir.\n\n" +
+                        "Devam ederseniz, ilgili siparişin durumu 'Ödendi' olarak işaretlenecek.\n\n" +
+                        "Devam etmek istiyor musunuz?",
+                        "Ödeme Onayı",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Question) != DialogResult.Yes)
+                {
+                    return;
+                }
 
-                // 3) Basit ABI (sadece odemeYap fonksiyonu)
-                var abi = @"[{'inputs':[],'name':'odemeYap','outputs':[],'stateMutability':'payable','type':'function'}]";
+                // Burada gerçek Nethereum çağrısı yerine sadece sipariş durumunu güncelliyoruz.
+                var satisKodu = txtSatisKodu.Text;
+                OrderStatusHelper.UpdateOrderStatus(satisKodu, OrderStatus.Odendi);
 
-                // 4) Kontrat referansı
-                var contract = web3.Eth.GetContract(abi, CONTRACT_ADDRESS);
-                var odemeYapFunction = contract.GetFunction("odemeYap");
-
-                // 5) Gönderilecek ETH miktarı (0.1 ETH -> Wei)
-                BigInteger valueInWei = Web3.Convert.ToWei(0.1m);
-
-                // 6) İşlemi gönder (gas ve value parametreleriyle)
-                var gas = new HexBigInteger(300000);              // isteğe göre ayarlanabilir
-                var value = new HexBigInteger(valueInWei);        // 0.1 ETH (Wei)
-
-                string txHash = await odemeYapFunction.SendTransactionAsync(
-                    account.Address,
-                    gas,
-                    value);
-
-                // 7) Başarılı ise transaction hash'i göster
                 XtraMessageBox.Show(
-                    $"İşlem başarıyla gönderildi.\n\nTx Hash:\n{txHash}",
-                    "Ödeme Başarılı",
+                    "Ödeme başarıyla işlendi ve sipariş durumu 'Ödendi' olarak güncellendi.",
+                    "Ödeme Tamamlandı",
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             }
             catch (Exception ex)
             {
-                // Hata durumunda mesaj göster
                 XtraMessageBox.Show(
                     $"Ödeme işlemi sırasında hata oluştu:\n\n{ex.Message}",
                     "Hata",

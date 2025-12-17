@@ -270,6 +270,8 @@
     <Compile Include="DAL\SiparislerDal.cs" />
     <Compile Include="Enums\OdemeDurumu.cs" />
     <Compile Include="Enums\SiparisDurumu.cs" />
+    <!-- Masa / sipariş akışını izlemek için birleşik durum enum'u -->
+    <Compile Include="Enums\OrderStatus.cs" />
     <Compile Include="Intefaces\IEntitiyRepository.cs" />
     <Compile Include="Intefaces\IEntity.cs" />
     <Compile Include="Mapping\KullaniciHareketleriMap.cs" />

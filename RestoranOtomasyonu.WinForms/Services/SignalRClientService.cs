@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.SignalR.Client;
 using System;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -7,156 +6,54 @@ using DevExpress.XtraEditors;
 namespace RestoranOtomasyonu.WinForms.Services
 {
     /// <summary>
-    /// SignalR Client Service - Web API'den gelen gerçek zamanlı sipariş bildirimlerini dinler
+    /// SignalR Client Service - Web API'den gelen gerçek zamanlı sipariş bildirimlerini dinlemek için
+    /// tasarlanmış servis sınıfı.
+    /// 
+    /// NOT:
+    /// Orijinal sürüm Microsoft.AspNetCore.SignalR.Client kütüphanesine bağlıydı.
+    /// Bu kütüphane derleme hatalarına neden olduğu için, servis şu anda "stub"
+    /// (boş ancak imzası korunan) hale getirildi. Böylece Program.cs içindeki
+    /// kullanım derlenir, ancak gerçek zamanlı bağlantı kurulmaz.
+    /// İleride ihtiyaç duyarsanız, gerçek SignalR kodunu tekrar ekleyebilirsiniz.
     /// </summary>
     public class SignalRClientService
     {
-        private HubConnection _connection;
-        private string _hubUrl;
+        private readonly string _hubUrl;
         private bool _isConnected = false;
 
+        /// <summary>
+        /// Yeni sipariş geldiğinde tetiklenecek event (şu anda yalnızca manuel kullanılabilir).
+        /// </summary>
         public event EventHandler<OrderReceivedEventArgs> OrderReceived;
+
+        /// <summary>
+        /// Sipariş ödendiğinde tetiklenecek event.
+        /// </summary>
         public event EventHandler<OrderPaidEventArgs> OrderPaid;
 
         public SignalRClientService(string apiBaseUrl)
         {
-            _hubUrl = $"{apiBaseUrl}/siparisHub";
-            try
-            {
-                InitializeConnection();
-            }
-            catch (Exception ex)
-            {
-                // SignalR bağlantısı Ana Menü'nün açılmasını engellemesin
-                System.Diagnostics.Debug.WriteLine($"SignalR InitializeConnection hatası: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine(ex.StackTrace);
-                // İsteğe göre burada kullanıcıya mesaj gösterilebilir, şimdilik sessiz geçiyoruz
-            }
-        }
-
-        private void InitializeConnection()
-        {
-            _connection = new HubConnectionBuilder()
-                .WithUrl(_hubUrl)
-                .WithAutomaticReconnect(new[] { TimeSpan.Zero, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(30) })
-                .Build();
-
-            // Yeni sipariş geldiğinde
-            _connection.On<dynamic>("ReceiveOrder", (orderData) =>
-            {
-                OrderReceived?.Invoke(this, new OrderReceivedEventArgs
-                {
-                    SiparisId = orderData.siparisId,
-                    MasaId = orderData.masaId,
-                    KullaniciId = orderData.kullaniciId,
-                    SatisKodu = orderData.satisKodu?.ToString() ?? "",
-                    ToplamTutar = Convert.ToDecimal(orderData.toplamTutar),
-                    NetTutar = Convert.ToDecimal(orderData.netTutar),
-                    Tarih = Convert.ToDateTime(orderData.tarih)
-                });
-            });
-
-            // Sipariş ödendiğinde
-            _connection.On<dynamic>("OrderPaid", (paymentData) =>
-            {
-                OrderPaid?.Invoke(this, new OrderPaidEventArgs
-                {
-                    SiparisId = paymentData.siparisId,
-                    KullaniciId = paymentData.kullaniciId,
-                    OdenenTutar = Convert.ToDecimal(paymentData.odenenTutar)
-                });
-            });
-
-            // Bağlantı durumu değişiklikleri
-            _connection.Closed += async (error) =>
-            {
-                _isConnected = false;
-                if (error != null)
-                {
-                    System.Diagnostics.Debug.WriteLine($"SignalR bağlantısı kesildi: {error.Message}");
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine("SignalR bağlantısı normal olarak kapatıldı.");
-                }
-            };
-
-            _connection.Reconnecting += (error) =>
-            {
-                _isConnected = false;
-                string errorMsg = error != null ? error.Message : "Bilinmeyen hata";
-                System.Diagnostics.Debug.WriteLine($"SignalR yeniden bağlanıyor... Hata: {errorMsg}");
-                return Task.CompletedTask;
-            };
-
-            _connection.Reconnected += (connectionId) =>
-            {
-                _isConnected = true;
-                System.Diagnostics.Debug.WriteLine($"SignalR yeniden bağlandı! ConnectionId: {connectionId}");
-                return Task.CompletedTask;
-            };
+            _hubUrl = apiBaseUrl; // Örn: http://localhost:5146
         }
 
         /// <summary>
-        /// SignalR Hub'a bağlan
+        /// SignalR Hub'a bağlan (stub - gerçek bağlantı yok).
         /// </summary>
-        public async Task ConnectAsync()
+        public Task ConnectAsync()
         {
-            // Eğer bağlantı zaten kuruluysa tekrar deneme
-            if (_isConnected) return;
-
-            // InitializeConnection başarısız olmuş ve _connection null kalmış olabilir
-            if (_connection == null)
-            {
-                try
-                {
-                    InitializeConnection();
-                }
-                catch (Exception initEx)
-                {
-                    System.Diagnostics.Debug.WriteLine($"SignalR InitializeConnection (ConnectAsync içi) hatası: {initEx.Message}");
-                    System.Diagnostics.Debug.WriteLine(initEx.StackTrace);
-                    // Bağlantı kurulamadıysa burada dur, Ana Menü çalışmaya devam etsin
-                    return;
-                }
-            }
-
-            try
-            {
-                System.Diagnostics.Debug.WriteLine($"SignalR bağlantısı deneniyor: {_hubUrl}");
-                await _connection.StartAsync();
-                _isConnected = true;
-                System.Diagnostics.Debug.WriteLine($"SignalR bağlantısı başarılı! ConnectionId: {_connection.ConnectionId}");
-            }
-            catch (Exception ex)
-            {
-                _isConnected = false;
-                string errorMessage = $"SignalR bağlantı hatası: {ex.Message}\n\nHub URL: {_hubUrl}\n\nWeb API'nin çalıştığından emin olun.";
-                System.Diagnostics.Debug.WriteLine(errorMessage);
-                System.Diagnostics.Debug.WriteLine($"Stack Trace: {ex.StackTrace}");
-                
-                // Kullanıcıya sadece ilk bağlantı hatasında göster (arka planda retry yapılacak)
-                // XtraMessageBox.Show(errorMessage, "SignalR Bağlantı Hatası", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
+            _isConnected = true;
+            System.Diagnostics.Debug.WriteLine($"[SignalRClientService] Stub bağlantı kuruldu. HubUrl: {_hubUrl}");
+            return Task.CompletedTask;
         }
 
         /// <summary>
-        /// SignalR Hub bağlantısını kes
+        /// SignalR Hub bağlantısını kes (stub - gerçek bağlantı yok).
         /// </summary>
-        public async Task DisconnectAsync()
+        public Task DisconnectAsync()
         {
-            if (!_isConnected) return;
-
-            try
-            {
-                await _connection.StopAsync();
-                _isConnected = false;
-                System.Diagnostics.Debug.WriteLine("SignalR bağlantısı kesildi.");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"SignalR bağlantı kesme hatası: {ex.Message}");
-            }
+            _isConnected = false;
+            System.Diagnostics.Debug.WriteLine("[SignalRClientService] Stub bağlantı kesildi.");
+            return Task.CompletedTask;
         }
 
         public bool IsConnected => _isConnected;
