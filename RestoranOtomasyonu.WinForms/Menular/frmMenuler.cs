@@ -1,6 +1,8 @@
-﻿using DevExpress.XtraEditors;
+using DevExpress.XtraEditors;
 using DevExpress.XtraGrid.Export;
 using RestoranOtomasyonu.Entities.Models;
+using RestoranOtomasyonu.Entities.Tools;
+using MenuEntity = RestoranOtomasyonu.Entities.Models.Menu;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -26,6 +28,53 @@ namespace RestoranOtomasyonu.WinForms.Menular
 
         private void btnKaydet_Click(object sender, EventArgs e)
         {
+            // Değişiklikleri kaydetmeden önce log kayıtlarını oluştur
+            var changes = context.ChangeTracker.Entries<MenuEntity>()
+                .Where(entry => entry.State == EntityState.Added || 
+                           entry.State == EntityState.Modified || 
+                           entry.State == EntityState.Deleted)
+                .ToList();
+
+            foreach (var entry in changes)
+            {
+                MenuEntity eskiVeri = null;
+                MenuEntity yeniVeri = null;
+                int tur = 0; // 0=Ekleme, 1=Silme, 2=Güncelleme
+
+                if (entry.State == EntityState.Added)
+                {
+                    yeniVeri = entry.Entity;
+                    tur = 0; // Ekleme
+                }
+                else if (entry.State == EntityState.Deleted)
+                {
+                    eskiVeri = entry.Entity;
+                    tur = 1; // Silme
+                }
+                else if (entry.State == EntityState.Modified)
+                {
+                    // Güncelleme için eski değerleri almak için OriginalValues kullanıyoruz
+                    var originalId = entry.Entity.Id;
+                    if (originalId != 0)
+                    {
+                        // Eski değerleri manuel olarak oluşturuyoruz
+                        eskiVeri = new MenuEntity
+                        {
+                            Id = originalId,
+                            MenuAdi = entry.OriginalValues["MenuAdi"]?.ToString() ?? string.Empty,
+                            Aciklama = entry.OriginalValues["Aciklama"]?.ToString() ?? string.Empty
+                        };
+                    }
+                    yeniVeri = entry.Entity;
+                    tur = 2; // Güncelleme
+                }
+
+                if (eskiVeri != null || yeniVeri != null)
+                {
+                    MenuLogHelper.KayitEkle(context, eskiVeri, yeniVeri, tur);
+                }
+            }
+
             context.SaveChanges();
             gridView1.RefreshData();
             MessageBox.Show("Değişiklikler kaydedildi.", "Bilgi", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -60,6 +109,18 @@ namespace RestoranOtomasyonu.WinForms.Menular
         {
             if (MessageBox.Show("Seçili olan menü silinsin mi?","Uyarı", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
+                // Silmeden önce seçili menüleri al
+                var selectedRows = gridView1.GetSelectedRows();
+                foreach (var rowHandle in selectedRows)
+                {
+                    var menu = gridView1.GetRow(rowHandle) as MenuEntity;
+                    if (menu != null)
+                    {
+                        // Log kaydı ekle
+                        MenuLogHelper.KayitEkle(context, menu, null, 1); // 1 = Silme
+                    }
+                }
+
                 gridView1.DeleteSelectedRows();
                 context.SaveChanges();
             }

@@ -1,7 +1,8 @@
-﻿using DevExpress.XtraEditors;
+using DevExpress.XtraEditors;
 using DevExpress.XtraGrid.Export;
 using RestoranOtomasyonu.Entities.DAL;
 using RestoranOtomasyonu.Entities.Models;
+using RestoranOtomasyonu.Entities.Tools;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -102,6 +103,15 @@ namespace RestoranOtomasyonu.WinForms.Urunler
             int seciliId = Convert.ToInt32(gridView1.GetFocusedRowCellValue(colId));
             if (MessageBox.Show("Seçili kayıt silinecek. Onaylıyor musunuz?","Uyarı",MessageBoxButtons.YesNo,MessageBoxIcon.Question)==DialogResult.Yes)
             {
+                // Silmeden önce eski veriyi al (log için)
+                var eskiVeri = urunDal.GetByFilter(context, u => u.Id == seciliId);
+                
+                if (eskiVeri != null)
+                {
+                    // Log kaydı ekle
+                    UrunLogHelper.KayitEkle(context, eskiVeri, null, 1); // 1 = Silme
+                }
+
                 urunDal.Delete(context, filter: u =>u.Id==seciliId);
                 urunDal.Save(context);
                 Listele();

@@ -1,12 +1,36 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using RestoranOtomasyonu.Entities.Enums;
 using RestoranOtomasyonu.WebAPI.Hubs;
 using Microsoft.Data.SqlClient;
 using System.Text;
 
 namespace RestoranOtomasyonu.WebAPI.Controllers
 {
+    /// <summary>
+    /// WEB API tarafında kullanılacak sipariş ödeme durumu enum'u.
+    /// NOT: Değerler, WinForms tarafındaki <see cref="RestoranOtomasyonu.Entities.Enums.OdemeDurumu"/> ile birebir aynıdır.
+    /// </summary>
+    public enum OdemeDurumu
+    {
+        OdemeBekliyor = 0,
+        Odenmedi = 0,
+        KendiOdedi = 1,
+        TumuOdendi = 2
+    }
+
+    /// <summary>
+    /// WEB API tarafında kullanılacak sipariş durumu enum'u.
+    /// NOT: Değerler, WinForms tarafındaki <see cref="RestoranOtomasyonu.Entities.Enums.SiparisDurumu"/> ile birebir aynıdır.
+    /// </summary>
+    public enum SiparisDurumu
+    {
+        OnayBekliyor = 0,
+        Hazirlaniyor = 1,
+        TeslimEdildi = 2,
+        Tamamlandi = 3,
+        IptalEdildi = 4
+    }
+
     [ApiController]
     [Route("api/[controller]")]
     public class OrderController : ControllerBase

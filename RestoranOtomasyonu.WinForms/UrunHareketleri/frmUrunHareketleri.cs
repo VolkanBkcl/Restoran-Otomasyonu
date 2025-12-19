@@ -28,7 +28,13 @@ namespace RestoranOtomasyonu.WinForms.UrunHareketleri
 
         private void Listele()
         {
-            gridControlUrunHareketleri.DataSource = urunHareketleriDal.GetAll(context);
+            // Sadece log kayıtlarını göster (SatisKodu = "LOG")
+            var logKayitlari = urunHareketleriDal.GetAll(context)
+                .Where(u => u.SatisKodu == "LOG")
+                .OrderByDescending(u => u.Tarih)
+                .ToList();
+            
+            gridControlUrunHareketleri.DataSource = logKayitlari;
             gridViewUrunHareketleri.BestFitColumns();
         }
 

@@ -1,11 +1,13 @@
-﻿using DevExpress.XtraEditors;
+using DevExpress.XtraEditors;
 using RestoranOtomasyonu.Entities.DAL;
 using RestoranOtomasyonu.Entities.Intefaces;
 using RestoranOtomasyonu.Entities.Models;
+using RestoranOtomasyonu.Entities.Tools;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Data.Entity;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -53,8 +55,29 @@ namespace RestoranOtomasyonu.WinForms.Urunler
                 File.Copy(sourceFileName: pictureEdit1.GetLoadedImageLocation(), destFileName: hedefYol);
                 _entity.Resim = $"Image\\{txtUrunAdi.Text}-{txtUrunKodu.Text}.png"; 
             }
+
+            // Güncelleme ise eski veriyi AsNoTracking ile çekelim (log için)
+            Urun eskiVeri = null;
+            int tur = 0; // 0=Ekleme, 2=Güncelleme
+
+            if (_entity.Id != 0)
+            {
+                // Güncelleme - eski veriyi al
+                eskiVeri = context.Set<Urun>()
+                    .AsNoTracking()
+                    .SingleOrDefault(u => u.Id == _entity.Id);
+                tur = 2; // Güncelleme
+            }
+            else
+            {
+                tur = 0; // Ekleme
+            }
+
             if (urunDal.AddOrUpdate(context, _entity))
             {
+                // Log kaydı ekle
+                UrunLogHelper.KayitEkle(context, eskiVeri, _entity, tur);
+
                 urunDal.Save(context);
                 kaydet = true;
                 this.Close();

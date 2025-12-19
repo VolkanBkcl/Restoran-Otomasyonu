@@ -1,7 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using RestoranOtomasyonu.Entities.DAL;
-using RestoranOtomasyonu.Entities.Models;
-using RestoranOtomasyonu.Entities.Enums;
 using System;
 using Microsoft.Data.SqlClient;
 using System.Security.Cryptography;
