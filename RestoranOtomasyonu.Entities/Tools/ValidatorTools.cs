@@ -1,33 +1,37 @@
-﻿using FluentValidation;
+using FluentValidation;
+using FluentValidation.Results;
 using RestoranOtomasyonu.Entities.Intefaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace RestoranOtomasyonu.Entities.Tools
 {
     public class ValidatorTools
     {
-        public static bool Validates(IValidator validator, IEntity entity)
+        public static bool Validates<TEntity>(FluentValidation.IValidator<TEntity> validator, TEntity entity) where TEntity : IEntity
         {
+            ValidationContext<TEntity> context = new ValidationContext<TEntity>(entity);
+            var validationResult = validator.Validate(context);
+            return validationResult.IsValid;
+        }
 
-            bool result = true;
-            ValidationContext<IEntity> context = new ValidationContext<IEntity>(entity);
+        public static string GetValidationErrors<TEntity>(FluentValidation.IValidator<TEntity> validator, TEntity entity) where TEntity : IEntity
+        {
+            ValidationContext<TEntity> context = new ValidationContext<TEntity>(entity);
             var validationResult = validator.Validate(context);
             if (!validationResult.IsValid)
             {
-                string message = null;
+                StringBuilder message = new StringBuilder();
                 foreach (var error in validationResult.Errors)
                 {
-                    message += error.ErrorMessage + System.Environment.NewLine;
+                    message.AppendLine(error.ErrorMessage);
                 }
-                MessageBox.Show(message);
-                result = false;
+                return message.ToString();
             }
-            return result;
+            return null;
         }
     }
 }

@@ -269,6 +269,35 @@
     <!-- Toast Notification -->
     <div id="toast" class="toast"></div>
 
+    <!-- Chatbot Widget -->
+    <div id="chatWidget" class="chat-widget">
+        <div id="chatWidgetButton" class="chat-widget-button" onclick="toggleChatWidget()">
+            💬
+        </div>
+        <div id="chatWidgetWindow" class="chat-widget-window">
+            <div class="chat-widget-header">
+                <div>
+                    <div class="chat-title">Akıllı Asistan</div>
+                    <div class="chat-subtitle">Menü ve sipariş konusunda size yardımcı olur</div>
+                </div>
+                <button class="chat-close-btn" onclick="toggleChatWidget()">✕</button>
+            </div>
+            <div class="chat-mode-toggle">
+                <button id="chatModeAi" class="chat-mode-btn active" onclick="setChatMode('ai')">🤖 AI Asistan</button>
+                <button id="chatModeLive" class="chat-mode-btn" onclick="setChatMode('live')">👨‍💼 Canlı Destek</button>
+            </div>
+            <div id="chatMessages" class="chat-messages">
+                <div class="chat-message chat-message-bot">
+                    Merhaba! Ben akıllı garsonunuzum. Menü, alerjileriniz veya öneriler için bana soru sorabilirsiniz.
+                </div>
+            </div>
+            <form class="chat-input-area" onsubmit="sendChatMessage(event)">
+                <input id="chatInput" type="text" placeholder="Örn: Veganım, ne önerirsiniz?" autocomplete="off" />
+                <button type="submit" class="chat-send-btn">Gönder</button>
+            </form>
+        </div>
+    </div>
+
     <script src="/js/app.js"></script>
 </body>
 </html>

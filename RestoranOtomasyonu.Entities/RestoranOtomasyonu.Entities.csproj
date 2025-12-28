@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\EntityFramework.6.5.1\build\EntityFramework.props" Condition="Exists('..\packages\EntityFramework.6.5.1\build\EntityFramework.props')" />
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{CD2F0A9B-01C5-4C9A-A60C-9FCA0D25350E}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>RestoranOtomasyonu.Entities</RootNamespace>
+    <AssemblyName>RestoranOtomasyonu.Entities</AssemblyName>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="FluentValidation, Version=11.0.0.0, Culture=neutral, PublicKeyToken=7de548da2fbae0f0, processorArchitecture=MSIL">
+      <HintPath>..\packages\FluentValidation.11.12.0\lib\netstandard2.0\FluentValidation.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.1.2\lib\net462\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.4.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Threading.Tasks.Extensions.4.6.3\lib\net462\System.Threading.Tasks.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml" />
+    <Reference Include="EntityFramework">
+      <HintPath>..\packages\EntityFramework.6.5.1\lib\net45\EntityFramework.dll</HintPath>
+    </Reference>
+    <Reference Include="EntityFramework.SqlServer">
+      <HintPath>..\packages\EntityFramework.6.5.1\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Class1.cs" />
+    <Compile Include="DAL\*.cs" />
+    <Compile Include="DTOs\*.cs" />
+    <Compile Include="Enums\*.cs" />
+    <Compile Include="Intefaces\*.cs" />
+    <Compile Include="Mapping\*.cs" />
+    <Compile Include="Models\*.cs" />
+    <Compile Include="Repository\*.cs" />
+    <Compile Include="Services\*.cs" />
+    <Compile Include="Tools\KullaniciLogHelper.cs" />
+    <Compile Include="Tools\MenuLogHelper.cs" />
+    <Compile Include="Tools\UrunLogHelper.cs" />
+    <Compile Include="Tools\ValidatorTools.cs" />
+    <Compile Include="Validations\*.cs" />
+    <Compile Include="Migrations\*.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Migrations\202511011139060_cls.resx">
+      <DependentUpon>202511011139060_cls.cs</DependentUpon>
+      <ManifestResourceName>RestoranOtomasyonu.Entities.Migrations.cls</ManifestResourceName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511021139494_TabloIliskilendirme.resx">
+      <DependentUpon>202511021139494_TabloIliskilendirme.cs</DependentUpon>
+      <ManifestResourceName>RestoranOtomasyonu.Entities.Migrations.TabloIliskilendirme</ManifestResourceName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511051901097_Validations2.resx">
+      <DependentUpon>202511051901097_Validations2.cs</DependentUpon>
+      <ManifestResourceName>RestoranOtomasyonu.Entities.Migrations.Validations2</ManifestResourceName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511061210173_MasaHareketlerindeDeğişiklik.resx">
+      <DependentUpon>202511061210173_MasaHareketlerindeDeğişiklik.cs</DependentUpon>
+      <ManifestResourceName>RestoranOtomasyonu.Entities.Migrations.MasaHareketlerindeDeğişiklik</ManifestResourceName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511061335111_Resim.resx">
+      <DependentUpon>202511061335111_Resim.cs</DependentUpon>
+      <ManifestResourceName>RestoranOtomasyonu.Entities.Migrations.Resim</ManifestResourceName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511061351083_UrunResim.resx">
+      <DependentUpon>202511061351083_UrunResim.cs</DependentUpon>
+      <ManifestResourceName>RestoranOtomasyonu.Entities.Migrations.UrunResim</ManifestResourceName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511081152210_BirimFiyatGüncellemesi.resx">
+      <DependentUpon>202511081152210_BirimFiyatGüncellemesi.cs</DependentUpon>
+      <ManifestResourceName>RestoranOtomasyonu.Entities.Migrations.BirimFiyatGüncellemesi</ManifestResourceName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202511230735104_MasaAdiSilindi.resx">
+      <DependentUpon>202511230735104_MasaAdiSilindi.cs</DependentUpon>
+      <ManifestResourceName>RestoranOtomasyonu.Entities.Migrations.MasaAdiSilindi</ManifestResourceName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202512051345167_MenuVeUrunHareketleriTablolari.resx">
+      <DependentUpon>202512051345167_MenuVeUrunHareketleriTablolari.cs</DependentUpon>
+      <ManifestResourceName>RestoranOtomasyonu.Entities.Migrations.MenuVeUrunHareketleriTablolari</ManifestResourceName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202512071245029_API.resx">
+      <DependentUpon>202512071245029_API.cs</DependentUpon>
+      <ManifestResourceName>RestoranOtomasyonu.Entities.Migrations.API</ManifestResourceName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\202512071302271_DosyaHatasıDuzeltme.resx">
+      <DependentUpon>202512071302271_DosyaHatasıDuzeltme.cs</DependentUpon>
+      <ManifestResourceName>RestoranOtomasyonu.Entities.Migrations.DosyaHatasıDuzeltme</ManifestResourceName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="..\packages\EntityFramework.6.5.1\build\EntityFramework.targets" Condition="Exists('..\packages\EntityFramework.6.5.1\build\EntityFramework.targets')" />
+</Project>

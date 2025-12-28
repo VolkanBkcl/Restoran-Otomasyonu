@@ -3,6 +3,7 @@ let currentUser = null;
 let currentMasaId = null;
 let cart = [];
 let API_BASE_URL = window.location.origin; // API base URL
+let signalRConnection = null; // SignalR bağlantısı
 
 // Blockchain Configuration (Ganache için)
 const CONTRACT_ADDRESS = "0xC04b9C087d1C67Eb1edC1e48Af1Af0AbaaBB2318"; // Ganache'tan deploy ettikten sonra buraya yapıştır
@@ -125,6 +126,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loadMenu();
             loadMyOrders();
             loadTableOrders();
+            initializeSignalR(); // SignalR bağlantısını başlat
         } catch (error) {
             console.error('Kullanıcı bilgisi parse edilemedi:', error);
             localStorage.removeItem('currentUser');
@@ -134,6 +136,106 @@ document.addEventListener('DOMContentLoaded', function() {
     
     console.log('Masa ID:', currentMasaId);
 });
+
+// ========== SIGNALR FUNCTIONS ==========
+
+async function initializeSignalR() {
+    try {
+        // SignalR kütüphanesini yükle (eğer yoksa)
+        if (typeof signalR === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/@microsoft/signalr@latest/dist/browser/signalr.min.js';
+            script.onload = () => connectSignalR();
+            document.head.appendChild(script);
+        } else {
+            connectSignalR();
+        }
+    } catch (error) {
+        console.error('SignalR başlatma hatası:', error);
+    }
+}
+
+function connectSignalR() {
+    try {
+        signalRConnection = new signalR.HubConnectionBuilder()
+            .withUrl(`${API_BASE_URL}/siparisHub`)
+            .withAutomaticReconnect()
+            .build();
+
+        // Sipariş durumu güncelleme dinleyicisi
+        signalRConnection.on('OrderStatusUpdated', (data) => {
+            console.log('Sipariş durumu güncellendi:', data);
+            updateOrderStatusUI(data);
+        });
+
+        // Grup durumu güncelleme dinleyicisi
+        signalRConnection.on('GroupStatusUpdated', (data) => {
+            console.log('Grup durumu güncellendi:', data);
+            updateGroupStatusUI(data);
+        });
+
+        // Bağlantı durumu dinleyicileri
+        signalRConnection.onclose(() => {
+            console.log('SignalR bağlantısı kapandı');
+        });
+
+        signalRConnection.onreconnecting(() => {
+            console.log('SignalR yeniden bağlanıyor...');
+        });
+
+        signalRConnection.onreconnected(() => {
+            console.log('SignalR yeniden bağlandı');
+        });
+
+        // Bağlantıyı başlat
+        signalRConnection.start()
+            .then(() => {
+                console.log('SignalR bağlantısı başarılı');
+            })
+            .catch((error) => {
+                console.error('SignalR bağlantı hatası:', error);
+            });
+    } catch (error) {
+        console.error('SignalR bağlantı hatası:', error);
+    }
+}
+
+function updateOrderStatusUI(data) {
+    // Sipariş durumunu UI'da güncelle
+    const { siparisId, masaId, yeniDurum, durumMetni } = data;
+
+    // Eğer bu masadaki sipariş ise güncelle
+    if (masaId && masaId.toString() === currentMasaId) {
+        // "Benim Hesabım" sekmesindeki siparişleri güncelle
+        if (document.getElementById('myAccountTab').classList.contains('active')) {
+            loadMyOrders();
+        }
+
+        // "Masa Özeti" sekmesindeki siparişleri güncelle
+        if (document.getElementById('tableSummaryTab').classList.contains('active')) {
+            loadTableOrders();
+        }
+
+        // Toast bildirimi göster
+        showToast(`Sipariş durumu güncellendi: ${durumMetni}`, 'info');
+    }
+}
+
+function updateGroupStatusUI(data) {
+    // Grup durumunu UI'da güncelle
+    const { grupId, masaId, yeniDurum, durumMetni } = data;
+
+    // Eğer bu masadaki grup ise güncelle
+    if (masaId && masaId.toString() === currentMasaId) {
+        // "Masa Özeti" sekmesindeki siparişleri güncelle
+        if (document.getElementById('tableSummaryTab').classList.contains('active')) {
+            loadTableOrders();
+        }
+
+        // Toast bildirimi göster
+        showToast(`Sipariş durumu güncellendi: ${durumMetni}`, 'info');
+    }
+}
 
 // Masa ID'sini path'ten al (örn: /masa/5)
 function getMasaIdFromPath() {
@@ -209,6 +311,7 @@ async function handleLogin(event) {
             loadMenu();
             loadMyOrders();
             loadTableOrders();
+            initializeSignalR(); // SignalR bağlantısını başlat
         } else {
             showToast(data.message || 'Giriş başarısız!', 'error');
         }
@@ -1026,5 +1129,112 @@ function showToast(message, type = 'info') {
     setTimeout(() => {
         toast.classList.remove('show');
     }, 3000);
+}
+
+// ========== CHATBOT WIDGET ==========
+
+let chatMode = 'ai'; // 'ai' | 'live'
+let chatSessionId = null;
+
+function ensureChatSession() {
+    if (!chatSessionId) {
+        chatSessionId = localStorage.getItem('chatSessionId');
+        if (!chatSessionId) {
+            chatSessionId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : 'sess-' + Date.now();
+            localStorage.setItem('chatSessionId', chatSessionId);
+        }
+    }
+    return chatSessionId;
+}
+
+function toggleChatWidget() {
+    const windowEl = document.getElementById('chatWidgetWindow');
+    if (!windowEl) return;
+    const isOpen = windowEl.classList.contains('open');
+    if (isOpen) {
+        windowEl.classList.remove('open');
+    } else {
+        windowEl.classList.add('open');
+        const input = document.getElementById('chatInput');
+        if (input) {
+            setTimeout(() => input.focus(), 50);
+        }
+    }
+}
+
+function setChatMode(mode) {
+    chatMode = mode === 'live' ? 'live' : 'ai';
+    const aiBtn = document.getElementById('chatModeAi');
+    const liveBtn = document.getElementById('chatModeLive');
+    if (aiBtn && liveBtn) {
+        aiBtn.classList.toggle('active', chatMode === 'ai');
+        liveBtn.classList.toggle('active', chatMode === 'live');
+    }
+    const messagesEl = document.getElementById('chatMessages');
+    if (messagesEl) {
+        const info = document.createElement('div');
+        info.className = 'chat-message chat-message-bot';
+        info.textContent = chatMode === 'ai'
+            ? 'AI modunda menü, alerjiler ve öneriler hakkında sorular sorabilirsiniz.'
+            : 'Canlı destek isteğiniz, yetkili personele iletilecektir.';
+        messagesEl.appendChild(info);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+}
+
+function appendChatMessage(sender, text) {
+    const messagesEl = document.getElementById('chatMessages');
+    if (!messagesEl || !text) return;
+
+    const msg = document.createElement('div');
+    msg.className = 'chat-message ' + (sender === 'user' ? 'chat-message-user' : 'chat-message-bot');
+    msg.textContent = text;
+    messagesEl.appendChild(msg);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+async function sendChatMessage(event) {
+    event.preventDefault();
+    const input = document.getElementById('chatInput');
+    if (!input) return;
+    const message = (input.value || '').trim();
+    if (!message) return;
+
+    appendChatMessage('user', message);
+    input.value = '';
+
+    const isLiveSupportRequest = (chatMode === 'live');
+    const sessionId = ensureChatSession();
+
+    const payload = {
+        message,
+        isLiveSupportRequest,
+        sessionId,
+        userName: currentUser ? (currentUser.adSoyad || currentUser.kullaniciAdi || 'Müşteri') : 'Müşteri'
+    };
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/chat/send`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Chat API hatası:', errorText);
+            appendChatMessage('bot', 'Üzgünüm, şu anda sohbet hizmetinde bir sorun var. Lütfen daha sonra tekrar deneyin.');
+            return;
+        }
+
+        const data = await response.json();
+        const reply = data.reply || 'Şu anda yanıt veremiyorum, lütfen biraz sonra tekrar deneyin.';
+        appendChatMessage('bot', reply);
+    } catch (err) {
+        console.error('Chat API istisnası:', err);
+        appendChatMessage('bot', 'Ağ bağlantısı hatası oluştu. Lütfen bağlantınızı kontrol edin.');
+    }
 }
 

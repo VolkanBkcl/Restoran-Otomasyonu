@@ -64,7 +64,7 @@ namespace RestoranOtomasyonu.WinForms.MasaHareketleri
                 return;
             }
 
-            if (calcMiktari.Value == null || Convert.ToDecimal(calcMiktari.Value) <= 0)
+            if (calcMiktari.Value <= 0)
             {
                 XtraMessageBox.Show("Lütfen geçerli bir miktar giriniz.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 calcMiktari.Focus();
@@ -214,17 +214,17 @@ namespace RestoranOtomasyonu.WinForms.MasaHareketleri
         private void FinansalHesaplamalariYap()
         {
             // Toplam tutar = Miktar * Birim Fiyat
-            decimal miktar = calcMiktari.Value != null ? Convert.ToDecimal(calcMiktari.Value) : 0;
-            decimal birimFiyat = calcBirimFiyati.Value != null ? Convert.ToDecimal(calcBirimFiyati.Value) : 0;
+            decimal miktar = Convert.ToDecimal(calcMiktari.Value);
+            decimal birimFiyat = Convert.ToDecimal(calcBirimFiyati.Value);
             toplamTutar = miktar * birimFiyat;
 
             // İndirim hesaplama
-            indirimOrani = calcIndirimOrani.Value != null ? Convert.ToDecimal(calcIndirimOrani.Value) : 0;
+            indirimOrani = Convert.ToDecimal(calcIndirimOrani.Value);
             indirimTutari = toplamTutar * (indirimOrani / 100);
             indirimliToplam = toplamTutar - indirimTutari;
 
             // Ödeme hesaplama
-            odenenTutar = calcOdenenTutar.Value != null ? Convert.ToDecimal(calcOdenenTutar.Value) : 0;
+            odenenTutar = Convert.ToDecimal(calcOdenenTutar.Value);
             kalanTutar = indirimliToplam - odenenTutar;
 
             // UI'ı güncelle

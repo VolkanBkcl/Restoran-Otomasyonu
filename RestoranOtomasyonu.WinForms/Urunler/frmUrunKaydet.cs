@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
-using System.Data.Entity;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -62,10 +61,8 @@ namespace RestoranOtomasyonu.WinForms.Urunler
 
             if (_entity.Id != 0)
             {
-                // Güncelleme - eski veriyi al
-                eskiVeri = context.Set<Urun>()
-                    .AsNoTracking()
-                    .SingleOrDefault(u => u.Id == _entity.Id);
+                // Güncelleme - eski veriyi repository üzerinden al (AsNoTracking gerek yok)
+                eskiVeri = urunDal.GetByFilter(context, u => u.Id == _entity.Id);
                 tur = 2; // Güncelleme
             }
             else

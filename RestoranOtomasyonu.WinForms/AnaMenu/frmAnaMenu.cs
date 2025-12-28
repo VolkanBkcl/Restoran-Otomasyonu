@@ -1,4 +1,4 @@
-﻿using DevExpress.XtraBars;
+using DevExpress.XtraBars;
 using DevExpress.XtraEditors;
 using RestoranOtomasyonu.WinForms.Masalar;
 using RestoranOtomasyonu.WinForms.MasaHareketleri;
@@ -9,6 +9,7 @@ using RestoranOtomasyonu.WinForms.UrunHareketleri;
 using RestoranOtomasyonu.WinForms.Kullanicilar;
 using RestoranOtomasyonu.WinForms.KullaniciHareketleri;
 using RestoranOtomasyonu.WinForms.Roller;
+using RestoranOtomasyonu.WinForms.SiparisYonetim;
 using RestoranOtomasyonu.WinForms.Core;
 using System;
 using System.Collections.Generic;
@@ -51,6 +52,15 @@ namespace RestoranOtomasyonu.WinForms.AnaMenu
             // Modern görünüm ayarları
             this.ribbon.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.ribbonStatusBar.Font = new System.Drawing.Font("Segoe UI", 9F);
+            
+            // Sipariş Yönetim butonunu sadece yetkili kullanıcılara göster
+            // Yönetici, Garson veya Mutfak görevlileri görebilir
+            bool siparisYonetimYetkisi = YetkiKontrolu.YoneticiMi || 
+                                         YetkiKontrolu.GarsonMi || 
+                                         YetkiKontrolu.RolVarMi("Mutfak");
+            this.frmSiparisYonetim.Visibility = siparisYonetimYetkisi 
+                ? DevExpress.XtraBars.BarItemVisibility.Always 
+                : DevExpress.XtraBars.BarItemVisibility.Never;
         }
 
         private void btnMasalar_ItemClick(object sender, ItemClickEventArgs e)
@@ -110,6 +120,19 @@ namespace RestoranOtomasyonu.WinForms.AnaMenu
         private void btnUrunHareketleri_ItemClick(object sender, ItemClickEventArgs e)
         {
             frmUrunHareketleri frm = new frmUrunHareketleri();
+            FormGetir(frm);
+        }
+
+        private void btnSiparisYonetim_ItemClick(object sender, ItemClickEventArgs e)
+        {
+            // Sadece Yönetici, Garson veya Mutfak erişebilir
+            if (!YetkiKontrolu.YoneticiMi && !YetkiKontrolu.GarsonMi && !YetkiKontrolu.RolVarMi("Mutfak"))
+            {
+                XtraMessageBox.Show("Bu işlem için Yönetici, Garson veya Mutfak yetkisi gereklidir.", "Yetkisiz Erişim", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            
+            frmSiparisYonetim frm = new frmSiparisYonetim();
             FormGetir(frm);
         }
     }

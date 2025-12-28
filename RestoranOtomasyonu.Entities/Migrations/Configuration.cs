@@ -1,4 +1,4 @@
-﻿namespace RestoranOtomasyonu.Entities.Migrations
+namespace RestoranOtomasyonu.Entities.Migrations
 {
     using System;
     using System.Data.Entity;
@@ -10,6 +10,7 @@
         public Configuration()
         {
             AutomaticMigrationsEnabled = false;
+            ContextKey = "RestoranOtomasyonu.Entities.Models.RestoranContext";
         }
 
         protected override void Seed(RestoranOtomasyonu.Entities.Models.RestoranContext context)

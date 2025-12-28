@@ -854,6 +854,335 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// Gruplandırılmış siparişleri getir (WinForms için)
+        /// </summary>
+        [HttpGet("grouped")]
+        public IActionResult GetGroupedOrders([FromQuery] int? masaId = null)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    // Siparişleri getir
+                    var siparisQuery = @"SELECT s.Id, s.MasaId, s.KullaniciId, s.SatisKodu, s.Tutar, s.IndirimOrani, s.NetTutar, 
+                                                s.OdemeDurumu, s.SiparisDurumu, s.Aciklama, s.Tarih,
+                                                m.MasaAdi, k.KullaniciAdi, k.AdSoyad
+                                         FROM Siparisler s
+                                         LEFT JOIN Masalar m ON s.MasaId = m.Id
+                                         LEFT JOIN Kullanicilar k ON s.KullaniciId = k.Id
+                                         WHERE s.SiparisDurumu != 4"; // İptal edilenler hariç
+
+                    if (masaId.HasValue && masaId.Value > 0)
+                    {
+                        siparisQuery += " AND s.MasaId = @MasaId";
+                    }
+
+                    siparisQuery += " ORDER BY s.Tarih DESC";
+
+                    var siparisler = new List<object>();
+                    using (var cmd = new SqlCommand(siparisQuery, connection))
+                    {
+                        if (masaId.HasValue && masaId.Value > 0)
+                        {
+                            cmd.Parameters.AddWithValue("@MasaId", masaId.Value);
+                        }
+
+                        using (var reader = cmd.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                siparisler.Add(new
+                                {
+                                    id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                    masaId = reader.GetInt32(reader.GetOrdinal("MasaId")),
+                                    masaAdi = reader.IsDBNull(reader.GetOrdinal("MasaAdi")) ? "" : reader.GetString(reader.GetOrdinal("MasaAdi")),
+                                    kullaniciId = reader.GetInt32(reader.GetOrdinal("KullaniciId")),
+                                    kullaniciAdi = reader.IsDBNull(reader.GetOrdinal("KullaniciAdi")) ? "" : reader.GetString(reader.GetOrdinal("KullaniciAdi")),
+                                    adSoyad = reader.IsDBNull(reader.GetOrdinal("AdSoyad")) ? "" : reader.GetString(reader.GetOrdinal("AdSoyad")),
+                                    satisKodu = reader.IsDBNull(reader.GetOrdinal("SatisKodu")) ? "" : reader.GetString(reader.GetOrdinal("SatisKodu")),
+                                    tutar = reader.GetDecimal(reader.GetOrdinal("Tutar")),
+                                    netTutar = reader.GetDecimal(reader.GetOrdinal("NetTutar")),
+                                    siparisDurumu = reader.GetInt32(reader.GetOrdinal("SiparisDurumu")),
+                                    tarih = reader.GetDateTime(reader.GetOrdinal("Tarih"))
+                                });
+                            }
+                        }
+                    }
+
+                    // Gruplandırma mantığı (basitleştirilmiş - tam mantık WinForms tarafında)
+                    var gruplar = siparisler
+                        .GroupBy(s => new
+                        {
+                            MasaId = ((dynamic)s).masaId,
+                            Tarih = new DateTime(
+                                ((DateTime)((dynamic)s).tarih).Year,
+                                ((DateTime)((dynamic)s).tarih).Month,
+                                ((DateTime)((dynamic)s).tarih).Day,
+                                ((DateTime)((dynamic)s).tarih).Hour,
+                                ((DateTime)((dynamic)s).tarih).Minute,
+                                0)
+                        })
+                        .Select(g => new
+                        {
+                            grupId = $"{g.Key.MasaId}_{g.Key.Tarih:yyyyMMddHHmm}",
+                            masaId = g.Key.MasaId,
+                            masaAdi = ((dynamic)g.First()).masaAdi ?? $"Masa {g.Key.MasaId}",
+                            toplamTutar = g.Sum(s => (decimal)((dynamic)s).tutar),
+                            netTutar = g.Sum(s => (decimal)((dynamic)s).netTutar),
+                            siparisSayisi = g.Count(),
+                            kullaniciSayisi = g.Select(s => ((dynamic)s).kullaniciId).Distinct().Count(),
+                            durum = g.Min(s => (int)((dynamic)s).siparisDurumu),
+                            ilkSiparisTarihi = g.Min(s => (DateTime)((dynamic)s).tarih),
+                            sonSiparisTarihi = g.Max(s => (DateTime)((dynamic)s).tarih),
+                            siparisDetaylari = g.Select(s => new
+                            {
+                                siparisId = ((dynamic)s).id,
+                                kullaniciId = ((dynamic)s).kullaniciId,
+                                kullaniciAdi = ((dynamic)s).kullaniciAdi,
+                                adSoyad = ((dynamic)s).adSoyad,
+                                satisKodu = ((dynamic)s).satisKodu,
+                                tutar = ((dynamic)s).tutar,
+                                netTutar = ((dynamic)s).netTutar,
+                                durum = ((dynamic)s).siparisDurumu,
+                                tarih = ((dynamic)s).tarih
+                            }).ToList()
+                        })
+                        .OrderByDescending(g => g.sonSiparisTarihi)
+                        .ToList();
+
+                    return Ok(new { success = true, data = gruplar });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Gruplandırılmış siparişler getirilirken hata oluştu.");
+                return StatusCode(500, new { message = "Siparişler getirilirken hata oluştu.", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Sipariş durumunu güncelle (WinForms'tan)
+        /// </summary>
+        [HttpPost("updateStatus/{siparisId}")]
+        public async Task<IActionResult> UpdateOrderStatus(int siparisId, [FromBody] UpdateStatusRequest request)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+                    var transaction = connection.BeginTransaction();
+
+                    try
+                    {
+                        // Sipariş var mı kontrol et
+                        var getQuery = "SELECT MasaId, SiparisDurumu FROM Siparisler WHERE Id = @Id";
+                        int masaId = 0;
+                        int mevcutDurum = 0;
+
+                        using (var cmd = new SqlCommand(getQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@Id", siparisId);
+                            using (var reader = cmd.ExecuteReader())
+                            {
+                                if (!reader.Read())
+                                {
+                                    transaction.Rollback();
+                                    return NotFound(new { message = "Sipariş bulunamadı." });
+                                }
+                                masaId = reader.GetInt32(reader.GetOrdinal("MasaId"));
+                                mevcutDurum = reader.GetInt32(reader.GetOrdinal("SiparisDurumu"));
+                            }
+                        }
+
+                        // Durum güncelle
+                        var updateQuery = "UPDATE Siparisler SET SiparisDurumu = @SiparisDurumu WHERE Id = @Id";
+                        using (var cmd = new SqlCommand(updateQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@Id", siparisId);
+                            cmd.Parameters.AddWithValue("@SiparisDurumu", request.SiparisDurumu);
+                            cmd.ExecuteNonQuery();
+                        }
+
+                        transaction.Commit();
+
+                        // SignalR bildirimi - Web tarafına durum güncellemesi gönder
+                        await _hubContext.Clients.All.SendAsync("OrderStatusUpdated", new
+                        {
+                            siparisId = siparisId,
+                            masaId = masaId,
+                            yeniDurum = request.SiparisDurumu,
+                            durumMetni = GetDurumMetni(request.SiparisDurumu)
+                        });
+
+                        return Ok(new { success = true, message = "Sipariş durumu güncellendi." });
+                    }
+                    catch
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Sipariş durumu güncellenirken hata oluştu. SiparisId: {SiparisId}", siparisId);
+                return StatusCode(500, new { message = "Durum güncellenirken hata oluştu.", error = ex.Message });
+            }
+        }
+
+        /// <summary>
+        /// Grup durumunu güncelle (Grup içindeki tüm siparişlerin durumunu güncelle)
+        /// </summary>
+        [HttpPost("updateGroupStatus")]
+        public async Task<IActionResult> UpdateGroupStatus([FromBody] UpdateGroupStatusRequest request)
+        {
+            try
+            {
+                // Request null kontrolü
+                if (request == null)
+                {
+                    return BadRequest(new { message = "İstek verisi boş olamaz.", error = "Request is null" });
+                }
+
+                // GrupId null veya boş kontrolü
+                if (string.IsNullOrWhiteSpace(request.GrupId))
+                {
+                    return BadRequest(new { message = "Grup ID boş olamaz.", error = "GrupId is null or empty" });
+                }
+
+                // SiparisDurumu geçerli değer kontrolü (0-4 arası)
+                if (request.SiparisDurumu < 0 || request.SiparisDurumu > 4)
+                {
+                    return BadRequest(new { message = "Geçersiz sipariş durumu. Durum 0-4 arası olmalıdır.", error = $"Invalid SiparisDurumu: {request.SiparisDurumu}" });
+                }
+
+                // Grup ID'den MasaId ve Tarih bilgisini çıkar (try bloğu dışında tanımla)
+                var parts = request.GrupId.Split('_');
+                int masaId = 0;
+
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+                    var transaction = connection.BeginTransaction();
+
+                    try
+                    {
+                        if (parts.Length != 2 || !int.TryParse(parts[0], out masaId))
+                        {
+                            transaction.Rollback();
+                            return BadRequest(new { message = $"Geçersiz grup ID formatı: '{request.GrupId}'. Format: 'MasaId_yyyyMMddHHmm' olmalıdır.", error = "Invalid GrupId format" });
+                        }
+
+                        // Tarih formatı: yyyyMMddHHmm
+                        if (parts[1].Length != 12)
+                        {
+                            transaction.Rollback();
+                            return BadRequest(new { message = $"Geçersiz tarih formatı. Tarih kısmı 12 karakter olmalıdır (yyyyMMddHHmm), alınan: '{parts[1]}' ({parts[1].Length} karakter).", error = "Invalid date format in GrupId" });
+                        }
+
+                        DateTime grupBaslangic;
+                        try
+                        {
+                            var yil = int.Parse(parts[1].Substring(0, 4));
+                            var ay = int.Parse(parts[1].Substring(4, 2));
+                            var gun = int.Parse(parts[1].Substring(6, 2));
+                            var saat = int.Parse(parts[1].Substring(8, 2));
+                            var dakika = int.Parse(parts[1].Substring(10, 2));
+
+                            grupBaslangic = new DateTime(yil, ay, gun, saat, dakika, 0);
+                        }
+                        catch (Exception ex)
+                        {
+                            transaction.Rollback();
+                            return BadRequest(new { message = $"Tarih parse edilemedi: '{parts[1]}'. Hata: {ex.Message}", error = "Date parsing failed" });
+                        }
+
+                        var grupBitis = grupBaslangic.AddMinutes(1);
+
+                        // Bu zaman aralığındaki tüm siparişleri güncelle
+                        var updateQuery = @"UPDATE Siparisler 
+                                           SET SiparisDurumu = @SiparisDurumu 
+                                           WHERE MasaId = @MasaId 
+                                           AND Tarih >= @Baslangic 
+                                           AND Tarih < @Bitis 
+                                           AND SiparisDurumu != 4"; // İptal edilenler hariç
+
+                        using (var cmd = new SqlCommand(updateQuery, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@MasaId", masaId);
+                            cmd.Parameters.AddWithValue("@SiparisDurumu", request.SiparisDurumu);
+                            cmd.Parameters.AddWithValue("@Baslangic", grupBaslangic);
+                            cmd.Parameters.AddWithValue("@Bitis", grupBitis);
+                            var affectedRows = cmd.ExecuteNonQuery();
+
+                            if (affectedRows == 0)
+                            {
+                                transaction.Rollback();
+                                return NotFound(new { message = "Grup içinde güncellenecek sipariş bulunamadı." });
+                            }
+                        }
+
+                        transaction.Commit();
+
+                        // SignalR bildirimi
+                        await _hubContext.Clients.All.SendAsync("GroupStatusUpdated", new
+                        {
+                            grupId = request.GrupId,
+                            masaId = masaId,
+                            yeniDurum = request.SiparisDurumu,
+                            durumMetni = GetDurumMetni(request.SiparisDurumu)
+                        });
+
+                        return Ok(new { success = true, message = "Grup durumu güncellendi." });
+                    }
+                    catch (Exception innerEx)
+                    {
+                        transaction.Rollback();
+                        _logger.LogError(innerEx, "Transaction hatası. GrupId: {GrupId}, MasaId: {MasaId}", request?.GrupId, parts?.Length > 0 ? parts[0] : "N/A");
+                        throw; // Dış catch bloğuna fırlat
+                    }
+                }
+            }
+            catch (Microsoft.Data.SqlClient.SqlException sqlEx)
+            {
+                _logger.LogError(sqlEx, "Veritabanı hatası. GrupId: {GrupId}, ErrorNumber: {ErrorNumber}", request?.GrupId, sqlEx.Number);
+                return StatusCode(500, new { 
+                    message = "Veritabanı hatası oluştu.", 
+                    error = sqlEx.Message,
+                    errorNumber = sqlEx.Number,
+                    details = "Lütfen veritabanı bağlantısını ve sorguyu kontrol edin."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Grup durumu güncellenirken hata oluştu. GrupId: {GrupId}, ExceptionType: {ExceptionType}", 
+                    request?.GrupId, ex.GetType().Name);
+                return StatusCode(500, new { 
+                    message = "Grup durumu güncellenirken hata oluştu.", 
+                    error = ex.Message,
+                    exceptionType = ex.GetType().Name,
+                    innerException = ex.InnerException?.Message
+                });
+            }
+        }
+
+        private string GetDurumMetni(int durum)
+        {
+            switch (durum)
+            {
+                case 0: return "Sipariş Alındı";
+                case 1: return "Hazırlanıyor";
+                case 2: return "Hazır";
+                case 3: return "Servis Edildi";
+                case 4: return "İptal Edildi";
+                default: return "Bilinmeyen";
+            }
+        }
+
         private string GenerateSatisKodu()
         {
             // SatisKodu veritabanında varchar(15) - max 15 karakter olmalı
@@ -907,6 +1236,17 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
         public string? OdemeTuru { get; set; } = "Blockchain";
         public decimal? OdenenTutar { get; set; }
         public string? SatisKodu { get; set; } = string.Empty;
+    }
+
+    public class UpdateStatusRequest
+    {
+        public int SiparisDurumu { get; set; }
+    }
+
+    public class UpdateGroupStatusRequest
+    {
+        public string GrupId { get; set; } = string.Empty;
+        public int SiparisDurumu { get; set; }
     }
 }
 

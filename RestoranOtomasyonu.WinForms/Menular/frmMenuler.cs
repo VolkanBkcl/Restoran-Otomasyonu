@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
-using System.Data.Entity;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -22,17 +21,20 @@ namespace RestoranOtomasyonu.WinForms.Menular
         public frmMenuler()
         {
             InitializeComponent();
-            context.Menu.Load();
-            gridControl1.DataSource = context.Menu.Local.ToBindingList();
+            // EF Core paketleri yerine, Entities projesindeki EF6 context'i kullanıyoruz.
+            // Menüleri basitçe listeleyip grid'e bağlıyoruz.
+            var menus = context.Menu.ToList();
+            gridControl1.DataSource = menus;
         }
 
         private void btnKaydet_Click(object sender, EventArgs e)
         {
             // Değişiklikleri kaydetmeden önce log kayıtlarını oluştur
             var changes = context.ChangeTracker.Entries<MenuEntity>()
-                .Where(entry => entry.State == EntityState.Added || 
-                           entry.State == EntityState.Modified || 
-                           entry.State == EntityState.Deleted)
+                .Where(entry =>
+                    entry.State.ToString() == "Added" ||
+                    entry.State.ToString() == "Modified" ||
+                    entry.State.ToString() == "Deleted")
                 .ToList();
 
             foreach (var entry in changes)
@@ -41,17 +43,19 @@ namespace RestoranOtomasyonu.WinForms.Menular
                 MenuEntity yeniVeri = null;
                 int tur = 0; // 0=Ekleme, 1=Silme, 2=Güncelleme
 
-                if (entry.State == EntityState.Added)
+                var stateName = entry.State.ToString();
+
+                if (stateName == "Added")
                 {
                     yeniVeri = entry.Entity;
                     tur = 0; // Ekleme
                 }
-                else if (entry.State == EntityState.Deleted)
+                else if (stateName == "Deleted")
                 {
                     eskiVeri = entry.Entity;
                     tur = 1; // Silme
                 }
-                else if (entry.State == EntityState.Modified)
+                else if (stateName == "Modified")
                 {
                     // Güncelleme için eski değerleri almak için OriginalValues kullanıyoruz
                     var originalId = entry.Entity.Id;

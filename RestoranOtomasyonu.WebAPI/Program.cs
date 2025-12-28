@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using RestoranOtomasyonu.WebAPI.Data;
 using RestoranOtomasyonu.WebAPI.Hubs;
-using Microsoft.Data.SqlClient;
+using RestoranOtomasyonu.WebAPI.Services;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -37,6 +39,18 @@ builder.Services.AddSignalR();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
     ?? "Data source=(localdb)\\MSSQLLocalDB;Initial Catalog=Restoran;Integrated Security=true";
 builder.Services.AddSingleton(connectionString);
+
+// EF Core DbContext (AI Chat + Menu/Urun için)
+builder.Services.AddDbContext<RestaurantAiDbContext>(options =>
+{
+    options.UseSqlServer(connectionString);
+});
+
+// OpenAI ayarları
+builder.Services.Configure<OpenAiSettings>(builder.Configuration.GetSection("OpenAI"));
+
+// HttpClient tabanlı ChatBot servisi
+builder.Services.AddHttpClient<IChatBotService, ChatBotService>();
 
 var app = builder.Build();
 

@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+using FluentValidation;
+using FluentValidation.Results;
 using RestoranOtomasyonu.Entities.Intefaces;
 using RestoranOtomasyonu.Entities.Tools;
 using System;
@@ -9,13 +10,14 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace RestoranOtomasyonu.Entities.Repository
 {
     public class EntityRepositoryBase<TContext, TEntity,TValidator> : IEntitiyRepository<TContext, TEntity>
         where TContext : DbContext, new()
         where TEntity : class,IEntity ,new()
-        where TValidator : IValidator, new()
+        where TValidator : FluentValidation.IValidator<TEntity>, new()
     {
         public bool AddOrUpdate(TContext context, TEntity entity)
         {
@@ -40,7 +42,24 @@ namespace RestoranOtomasyonu.Entities.Repository
 
         public TEntity GetByFilter(TContext context, Expression<Func<TEntity, bool>> filter)
         {
-            return context.Set<TEntity>().FirstOrDefault(filter);
+            try
+            {
+                return context.Set<TEntity>().FirstOrDefault(filter);
+            }
+            catch (XmlException ex)
+            {
+                // Migration geçmişindeki XML hatası - veritabanını yeniden başlatmayı dene
+                throw new InvalidOperationException(
+                    "Veritabanı migration geçmişinde bir hata tespit edildi. " +
+                    "Lütfen migration'ları kontrol edin veya veritabanını yeniden oluşturun. " +
+                    "Detay: " + ex.Message, ex);
+            }
+            catch (Exception ex)
+            {
+                // Diğer hatalar için genel bir mesaj
+                throw new InvalidOperationException(
+                    "Veritabanı sorgusu sırasında bir hata oluştu: " + ex.Message, ex);
+            }
         }
 
         public void Save(TContext context)

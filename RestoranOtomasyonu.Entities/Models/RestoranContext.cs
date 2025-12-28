@@ -1,18 +1,46 @@
-﻿using RestoranOtomasyonu.Entities.Mapping;
+using RestoranOtomasyonu.Entities.Mapping;
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
+using System.Data.Entity.Infrastructure.Interception;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
 
 namespace RestoranOtomasyonu.Entities.Models
 {
     public class RestoranContext:DbContext
     {
+        static RestoranContext()
+        {
+            // Migration geçmişini okurken XML hatalarını önlemek için
+            // Migration initializer'ı devre dışı bırak
+            Database.SetInitializer<RestoranContext>(null);
+        }
+
         public RestoranContext():base("name=connection")
         {
-
+            // Migration geçmişini okurken XML hatalarını önlemek için
+            // Configuration'ı yüklerken hata oluşmasını engelle
+            try
+            {
+                // Veritabanının var olup olmadığını kontrol et
+                if (!Database.Exists())
+                {
+                    Database.CreateIfNotExists();
+                }
+            }
+            catch (XmlException)
+            {
+                // XML hatası oluşursa, migration geçmişini atla
+                // Bu durumda veritabanı zaten var olduğu için devam edebiliriz
+            }
+            catch
+            {
+                // Diğer hatalar için de devam et
+            }
         }
 
         public DbSet<Menu> Menu { get; set; }

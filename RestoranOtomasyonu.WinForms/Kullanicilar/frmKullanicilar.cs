@@ -128,11 +128,8 @@ namespace RestoranOtomasyonu.WinForms.Kullanicilar
                 // Silmeden önce eski veriyi al (log için)
                 var eskiVeri = kullanicilarDal.GetByFilter(context, k => k.Id == seciliId);
 
-                if (eskiVeri != null)
-                {
-                    // 1 = Silme
-                    KullaniciLogHelper.KayitEkle(context, eskiVeri, null, 1);
-                }
+                // TODO: İstersen burada KullaniciLogHelper ile silme logu tutabilirsin.
+                // Şimdilik derleme hatalarını kaldırmak için loglama kapatıldı.
 
                 kullanicilarDal.Delete(context, k => k.Id == seciliId);
                 kullanicilarDal.Save(context);

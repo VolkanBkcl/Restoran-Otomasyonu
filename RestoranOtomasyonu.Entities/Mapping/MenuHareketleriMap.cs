@@ -43,3 +43,6 @@ namespace RestoranOtomasyonu.Entities.Mapping
 
 
 
+
+
+

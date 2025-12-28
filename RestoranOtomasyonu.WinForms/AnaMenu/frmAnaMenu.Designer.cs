@@ -1,4 +1,4 @@
-﻿namespace RestoranOtomasyonu.WinForms.AnaMenu
+namespace RestoranOtomasyonu.WinForms.AnaMenu
 {
     partial class frmAnaMenu
     {
@@ -48,6 +48,7 @@
             this.btnDoviz = new DevExpress.XtraBars.BarButtonItem();
             this.btnYardim = new DevExpress.XtraBars.BarButtonItem();
             this.btnHakkimizda = new DevExpress.XtraBars.BarButtonItem();
+            this.barStaticItemStatus = new DevExpress.XtraBars.BarStaticItem();
             this.frmRestoran = new DevExpress.XtraBars.Ribbon.RibbonPage();
             this.MasalarRibbonPageGroup = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.MenulerRibbonPageGroup = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
@@ -56,8 +57,8 @@
             this.frmAyarlar = new DevExpress.XtraBars.Ribbon.RibbonPage();
             this.AyarlarribbonPageGroup = new DevExpress.XtraBars.Ribbon.RibbonPageGroup();
             this.ribbonStatusBar = new DevExpress.XtraBars.Ribbon.RibbonStatusBar();
-            this.barStaticItemStatus = new DevExpress.XtraBars.BarStaticItem();
             this.xtraTabbedMdiManager1 = new DevExpress.XtraTabbedMdi.XtraTabbedMdiManager(this.components);
+            this.frmSiparisYonetim = new DevExpress.XtraBars.BarButtonItem();
             ((System.ComponentModel.ISupportInitialize)(this.ribbon)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.xtraTabbedMdiManager1)).BeginInit();
             this.SuspendLayout();
@@ -82,18 +83,18 @@
             this.btnDoviz,
             this.btnYardim,
             this.btnHakkimizda,
-            this.barStaticItemStatus});
+            this.barStaticItemStatus,
+            this.frmSiparisYonetim});
             this.ribbon.Location = new System.Drawing.Point(0, 0);
-            this.ribbon.MaxItemId = 17;
+            this.ribbon.MaxItemId = 18;
             this.ribbon.Name = "ribbon";
             this.ribbon.Pages.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPage[] {
             this.frmRestoran,
             this.frmAyarlar});
-            this.ribbon.Size = new System.Drawing.Size(1152, 158);
-            this.ribbon.StatusBar = this.ribbonStatusBar;
-            // Modern görünüm ayarları
             this.ribbon.ShowApplicationButton = DevExpress.Utils.DefaultBoolean.False;
             this.ribbon.ShowExpandCollapseButton = DevExpress.Utils.DefaultBoolean.True;
+            this.ribbon.Size = new System.Drawing.Size(1152, 158);
+            this.ribbon.StatusBar = this.ribbonStatusBar;
             // 
             // barWorkspaceMenuItem1
             // 
@@ -177,7 +178,6 @@
             // 
             this.btnKullanicilar.Caption = "Kullanıcılar";
             this.btnKullanicilar.Id = 10;
-            // SVG ikon kullanımına geçiş için hazırlık (şimdilik LargeImage kullanılıyor)
             this.btnKullanicilar.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("btnKullanicilar.ImageOptions.LargeImage")));
             this.btnKullanicilar.Name = "btnKullanicilar";
             this.btnKullanicilar.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
@@ -225,6 +225,12 @@
             this.btnHakkimizda.Name = "btnHakkimizda";
             this.btnHakkimizda.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
             // 
+            // barStaticItemStatus
+            // 
+            this.barStaticItemStatus.Caption = "Restoran Otomasyonu v1.0 | Hazır";
+            this.barStaticItemStatus.Id = 16;
+            this.barStaticItemStatus.Name = "barStaticItemStatus";
+            // 
             // frmRestoran
             // 
             this.frmRestoran.Groups.AddRange(new DevExpress.XtraBars.Ribbon.RibbonPageGroup[] {
@@ -237,36 +243,37 @@
             // 
             // MasalarRibbonPageGroup
             // 
+            this.MasalarRibbonPageGroup.CaptionButtonVisible = DevExpress.Utils.DefaultBoolean.False;
             this.MasalarRibbonPageGroup.ItemLinks.Add(this.btnMasalar);
             this.MasalarRibbonPageGroup.ItemLinks.Add(this.btnMasaHareketleri);
+            this.MasalarRibbonPageGroup.ItemLinks.Add(this.frmSiparisYonetim);
             this.MasalarRibbonPageGroup.Name = "MasalarRibbonPageGroup";
             this.MasalarRibbonPageGroup.Text = "Masalar";
-            this.MasalarRibbonPageGroup.ShowCaptionButton = false;
             // 
             // MenulerRibbonPageGroup
             // 
+            this.MenulerRibbonPageGroup.CaptionButtonVisible = DevExpress.Utils.DefaultBoolean.False;
             this.MenulerRibbonPageGroup.ItemLinks.Add(this.btnMenuler);
             this.MenulerRibbonPageGroup.ItemLinks.Add(this.btnMenuHareketleri);
             this.MenulerRibbonPageGroup.Name = "MenulerRibbonPageGroup";
             this.MenulerRibbonPageGroup.Text = "Menüler";
-            this.MenulerRibbonPageGroup.ShowCaptionButton = false;
             // 
             // UrunlerRibbonPageGroup
             // 
+            this.UrunlerRibbonPageGroup.CaptionButtonVisible = DevExpress.Utils.DefaultBoolean.False;
             this.UrunlerRibbonPageGroup.ItemLinks.Add(this.btnUrunler);
             this.UrunlerRibbonPageGroup.ItemLinks.Add(this.btnUrunHareketleri);
             this.UrunlerRibbonPageGroup.Name = "UrunlerRibbonPageGroup";
             this.UrunlerRibbonPageGroup.Text = "Ürünler";
-            this.UrunlerRibbonPageGroup.ShowCaptionButton = false;
             // 
             // KullanıcılarRibbonPageGroup
             // 
+            this.KullanıcılarRibbonPageGroup.CaptionButtonVisible = DevExpress.Utils.DefaultBoolean.False;
             this.KullanıcılarRibbonPageGroup.ItemLinks.Add(this.btnKullanicilar);
             this.KullanıcılarRibbonPageGroup.ItemLinks.Add(this.btnKullaniciHareketleri);
             this.KullanıcılarRibbonPageGroup.ItemLinks.Add(this.btnRoller);
             this.KullanıcılarRibbonPageGroup.Name = "KullanıcılarRibbonPageGroup";
             this.KullanıcılarRibbonPageGroup.Text = "Kullanıcılar";
-            this.KullanıcılarRibbonPageGroup.ShowCaptionButton = false;
             // 
             // frmAyarlar
             // 
@@ -277,18 +284,12 @@
             // 
             // AyarlarribbonPageGroup
             // 
+            this.AyarlarribbonPageGroup.CaptionButtonVisible = DevExpress.Utils.DefaultBoolean.False;
             this.AyarlarribbonPageGroup.ItemLinks.Add(this.btnDoviz);
             this.AyarlarribbonPageGroup.ItemLinks.Add(this.btnYardim);
             this.AyarlarribbonPageGroup.ItemLinks.Add(this.btnHakkimizda);
             this.AyarlarribbonPageGroup.Name = "AyarlarribbonPageGroup";
             this.AyarlarribbonPageGroup.Text = "Ayarlar";
-            this.AyarlarribbonPageGroup.ShowCaptionButton = false;
-            // 
-            // barStaticItemStatus
-            // 
-            this.barStaticItemStatus.Caption = "Restoran Otomasyonu v1.0 | Hazır";
-            this.barStaticItemStatus.Id = 16;
-            this.barStaticItemStatus.Name = "barStaticItemStatus";
             // 
             // ribbonStatusBar
             // 
@@ -297,12 +298,19 @@
             this.ribbonStatusBar.Name = "ribbonStatusBar";
             this.ribbonStatusBar.Ribbon = this.ribbon;
             this.ribbonStatusBar.Size = new System.Drawing.Size(1152, 24);
-            // Modern status bar ayarları
-            this.ribbonStatusBar.ShowSizeGrip = true;
             // 
             // xtraTabbedMdiManager1
             // 
             this.xtraTabbedMdiManager1.MdiParent = this;
+            // 
+            // frmSiparisYonetim
+            // 
+            this.frmSiparisYonetim.Caption = "Sipariş Yönetim";
+            this.frmSiparisYonetim.Id = 17;
+            this.frmSiparisYonetim.ImageOptions.LargeImage = ((System.Drawing.Image)(resources.GetObject("barButtonItem2.ImageOptions.LargeImage")));
+            this.frmSiparisYonetim.Name = "frmSiparisYonetim";
+            this.frmSiparisYonetim.RibbonStyle = DevExpress.XtraBars.Ribbon.RibbonItemStyles.Large;
+            this.frmSiparisYonetim.ItemClick += new DevExpress.XtraBars.ItemClickEventHandler(this.btnSiparisYonetim_ItemClick);
             // 
             // frmAnaMenu
             // 
@@ -355,5 +363,6 @@
         private DevExpress.XtraBars.BarStaticItem barStaticItemStatus;
         private DevExpress.XtraTabbedMdi.XtraTabbedMdiManager xtraTabbedMdiManager1;
         private DevExpress.Utils.WorkspaceManager workspaceManager1;
+        private DevExpress.XtraBars.BarButtonItem frmSiparisYonetim;
     }
 }
