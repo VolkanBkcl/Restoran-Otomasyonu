@@ -440,6 +440,7 @@
 
                 // Provider ve Signer oluştur
                 provider = new ethers.BrowserProvider(window.ethereum);
+                provider.pollingInterval = 15000; // RPC limitini aşmamak için sorgu süresini uzat (15sn)
                 signer = await provider.getSigner();
                 connectedAccount = await signer.getAddress();
 

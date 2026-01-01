@@ -519,7 +519,10 @@ function displayMenu(items) {
         let imageSrc = item.resim || '';
         if (imageSrc && !imageSrc.startsWith('http') && !imageSrc.startsWith('data:')) {
             // Dosya yolu ise, API base URL'ini ekle
-            imageSrc = `${API_BASE_URL}/${imageSrc}`;
+            // URL'i oluştururken path kısmını encode et (Türkçe karakterler için)
+            const pathParts = imageSrc.split('/');
+            const encodedPath = pathParts.map(part => encodeURIComponent(part)).join('/');
+            imageSrc = `${API_BASE_URL}/${encodedPath}`;
         }
         if (!imageSrc || imageSrc === '') {
             imageSrc = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2Y4ZjlmYSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTgiIGZpbGw9IiM5OTkiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIj5SZXNpbSBZb2s8L3RleHQ+PC9zdmc+';

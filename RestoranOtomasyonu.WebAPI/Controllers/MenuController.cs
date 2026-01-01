@@ -184,8 +184,19 @@ namespace RestoranOtomasyonu.WebAPI.Controllers
 
             if (value is string s)
             {
-                // String ise (dosya yolu veya data uri) aynen döndür
-                return string.IsNullOrWhiteSpace(s) ? "" : s;
+                // String ise (dosya yolu veya data uri)
+                if (string.IsNullOrWhiteSpace(s)) return "";
+                
+                // Eğer data URI değilse (http, https, data: ile başlamıyorsa)
+                // Windows path backslash'larını URL için forward slash'a çevir
+                if (!s.StartsWith("http", StringComparison.OrdinalIgnoreCase) && 
+                    !s.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Backslash'ları forward slash'a çevir (URL uyumluluğu için)
+                    s = s.Replace('\\', '/');
+                }
+                
+                return s;
             }
 
             if (value is byte[] bytes && bytes.Length > 0)
