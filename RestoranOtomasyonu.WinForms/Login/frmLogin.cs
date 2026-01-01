@@ -23,11 +23,10 @@ namespace RestoranOtomasyonu.WinForms.Login
 
         private void frmLogin_Load(object sender, EventArgs e)
         {
-            // NavigationFrame'i Giriş ekranına yönlendir
+
             navigationFrame1.SelectedPageIndex = 0;
             
-            // "Beni Hatırla" checkbox'ı için önceki kaydı kontrol et (Registry veya Settings kullanılabilir)
-            // Şimdilik boş bırakıldı, gerekirse eklenebilir
+
         }
 
         #region GİRİŞ EKRANI
@@ -40,7 +39,7 @@ namespace RestoranOtomasyonu.WinForms.Login
                 return;
             }
 
-            // Kullanıcı kontrolü
+
             var kullanici = kullanicilarDal.GetByFilter(context, 
                 k => k.KullaniciAdi == txtKullaniciAdi.Text && k.Parola == txtParola.Text);
 
@@ -50,18 +49,17 @@ namespace RestoranOtomasyonu.WinForms.Login
                 return;
             }
 
-            // Aktif kullanıcı kontrolü
+
             if (!kullanici.AktifMi)
             {
                 XtraMessageBox.Show("Bu kullanıcı hesabı pasif durumda. Lütfen yönetici ile iletişime geçiniz.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
-            // Başarılı giriş
+
             girisYapanKullanici = kullanici;
 
-            // "Beni Hatırla" ayarlarını kaydet (Registry veya Settings kullanılabilir)
-            // Şimdilik boş bırakıldı, gerekirse eklenebilir
+
 
             this.DialogResult = DialogResult.OK;
             this.Close();
@@ -69,13 +67,13 @@ namespace RestoranOtomasyonu.WinForms.Login
 
         private void hyperlinkLabelControlKaydol_Click(object sender, EventArgs e)
         {
-            // Kayıt ekranına geç
+
             navigationFrame1.SelectedPageIndex = 1;
         }
 
         private void hyperlinkLabelControlSifremiUnuttum_Click(object sender, EventArgs e)
         {
-            // Şifre kurtarma ekranına geç
+
             navigationFrame1.SelectedPageIndex = 2;
         }
 
@@ -85,7 +83,7 @@ namespace RestoranOtomasyonu.WinForms.Login
 
         private void btnKaydol_Click(object sender, EventArgs e)
         {
-            // Validasyon
+
             if (string.IsNullOrWhiteSpace(txtKayitAdSoyad.Text))
             {
                 XtraMessageBox.Show("Lütfen ad soyad giriniz.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -114,7 +112,7 @@ namespace RestoranOtomasyonu.WinForms.Login
                 return;
             }
 
-            // Kullanıcı adı kontrolü
+
             var mevcutKullanici = kullanicilarDal.GetByFilter(context, 
                 k => k.KullaniciAdi == txtKayitKullaniciAdi.Text);
             
@@ -125,7 +123,7 @@ namespace RestoranOtomasyonu.WinForms.Login
                 return;
             }
 
-            // Yeni kullanıcı oluştur
+
             var yeniKullanici = new KullanicilarEntity
             {
                 AdSoyad = txtKayitAdSoyad.Text,
@@ -137,21 +135,19 @@ namespace RestoranOtomasyonu.WinForms.Login
                 Cevap = txtKayitCevap.Text,
                 Gorevi = "Musteri", // Otomatik set
                 KayitTarihi = DateTime.Now, // Otomatik set
-                AktifMi = true // Otomatik set
+             // Otomatik set
+                AktifMi = true
             };
 
-            // Veritabanına kaydet
             if (kullanicilarDal.AddOrUpdate(context, yeniKullanici))
             {
                 kullanicilarDal.Save(context);
                 XtraMessageBox.Show("Kayıt başarıyla tamamlandı! Giriş yapabilirsiniz.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 
-                // Giriş ekranına dön ve kullanıcı adını doldur
                 navigationFrame1.SelectedPageIndex = 0;
                 txtKullaniciAdi.Text = txtKayitKullaniciAdi.Text;
                 txtParola.Text = string.Empty;
                 
-                // Kayıt formunu temizle
                 TemizleKayitFormu();
             }
             else
@@ -162,7 +158,7 @@ namespace RestoranOtomasyonu.WinForms.Login
 
         private void hyperlinkLabelControlGeriDon_Click(object sender, EventArgs e)
         {
-            // Giriş ekranına dön
+
             navigationFrame1.SelectedPageIndex = 0;
             TemizleKayitFormu();
         }
@@ -200,14 +196,14 @@ namespace RestoranOtomasyonu.WinForms.Login
                 return;
             }
 
-            // Hatırlatma sorusunu göster
+
             lblHatirlatmaSorusu.Text = kullanici.HatirlatmaSorusu;
             lblHatirlatmaSorusu.Visible = true;
             txtSifreKurtarmaCevap.Visible = true;
             txtSifreKurtarmaCevap.Enabled = true;
             btnCevapKontrol.Enabled = true;
             
-            // Kullanıcıyı sakla (cevap kontrolü için)
+
             txtSifreKurtarmaKullaniciAdi.Tag = kullanici;
         }
 
@@ -228,7 +224,7 @@ namespace RestoranOtomasyonu.WinForms.Login
                 return;
             }
 
-            // Cevap doğru - yeni şifre belirleme alanlarını göster
+
             lblYeniParola.Visible = true;
             txtYeniParola.Visible = true;
             txtYeniParola.Enabled = true;
@@ -261,7 +257,7 @@ namespace RestoranOtomasyonu.WinForms.Login
                 return;
             }
 
-            // Şifreyi güncelle
+
             kullanici.Parola = txtYeniParola.Text;
 
             if (kullanicilarDal.AddOrUpdate(context, kullanici))

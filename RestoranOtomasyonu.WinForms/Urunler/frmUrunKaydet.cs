@@ -27,7 +27,7 @@ namespace RestoranOtomasyonu.WinForms.Urunler
         public frmUrunKaydet(Urun entity)
         {
             InitializeComponent();
-            this.Shown += frmUrunKaydet_Shown; // Event aboneliği
+            this.Shown += frmUrunKaydet_Shown;
             _entity = entity;
             lookUpMenu.Properties.DataSource = menudal.GetAll(context);
             lookUpMenu.DataBindings.Add(propertyName: "EditValue", _entity, dataMember: "MenuId");
@@ -42,9 +42,7 @@ namespace RestoranOtomasyonu.WinForms.Urunler
             {
                 if (_entity.Resim != null && !string.IsNullOrWhiteSpace(_entity.Resim))
                 {
-                    // Resim yolunu tam yola çevir
                     string resimYolu = _entity.Resim;
-                    // Forward slash'ı backslash'a çevir (Windows için)
                     resimYolu = resimYolu.Replace('/', '\\');
                     
                     if (!Path.IsPathRooted(resimYolu))
@@ -54,7 +52,6 @@ namespace RestoranOtomasyonu.WinForms.Urunler
                     
                     if (File.Exists(resimYolu))
                     {
-                        // File locking sorununu önlemek için MemoryStream kullanıyoruz
                         byte[] imageBytes = File.ReadAllBytes(resimYolu);
                         using (MemoryStream ms = new MemoryStream(imageBytes))
                         {
@@ -64,20 +61,12 @@ namespace RestoranOtomasyonu.WinForms.Urunler
                 }
             }
 
-            // Resim değişikliğini takip etmek için event
-            // Note: DevExpress PictureEdit EditValueChanged fires on load too if we set Image property.
-            // We need to distinguish user change vs initial load.
-            // Initial load happens in constructor.
-            // So we can set the flag to false AFTER constructor logic (in Form Load).
-            
-            // But here we are in separate method. Let's move the subscription to Form Load or ensure proper initializing.
-            // The simplest 'hack': clear the flag at the end of Constructor, but PictureEdit might fire later.
-            // Better: Subscribe in Form_Load.
+
         }
 
         private void frmUrunKaydet_Shown(object sender, EventArgs e)
         {
-             _resimDegisti = false; // Reset flag after initial load
+             _resimDegisti = false;
              pictureEdit1.EditValueChanged += (s, ev) => 
              {
                  _resimDegisti = true;
@@ -106,11 +95,11 @@ namespace RestoranOtomasyonu.WinForms.Urunler
                 
                 string winFormsHedefYol = Path.Combine(winFormsImageKlasor, dosyaAdi);
 
-                // --- 1. Görseli Kaydetme (Locking Fallback) ---
+
                 bool dosyaKaydedildi = false;
                 try
                 {
-                    // Önce direkt kaydetmeyi dene (dosya yoksa veya kilitli değilse)
+
                     if (!string.IsNullOrEmpty(kaynakDosya) && File.Exists(kaynakDosya))
                     {
                         File.Copy(kaynakDosya, winFormsHedefYol, true);
@@ -123,7 +112,7 @@ namespace RestoranOtomasyonu.WinForms.Urunler
                 }
                 catch (IOException)
                 {
-                    // Dosya kilitliyse yeni isim ver (GUID ekle)
+
                     string uzanti = Path.GetExtension(dosyaAdi);
                     string simdi = DateTime.Now.ToString("yyyyMMddHHmmss");
                     dosyaAdi = $"{Path.GetFileNameWithoutExtension(dosyaAdi)}_{simdi}{uzanti}";
@@ -155,7 +144,7 @@ namespace RestoranOtomasyonu.WinForms.Urunler
                 {
                     _entity.Resim = $"Image/{dosyaAdi}";
                     
-                    // WebAPI kopyalama (Opsiyonel, hata verirse devam et)
+
                     try
                     {
                         string solutionKoku = Path.GetFullPath(Path.Combine(Application.StartupPath, "..", ".."));
@@ -169,20 +158,17 @@ namespace RestoranOtomasyonu.WinForms.Urunler
                 }
             }
 
-            // --- 2. Veritabanı Kayıt İşlemi (Context Reload Fix) ---
+
             
             bool basarili = false;
-            Urun eskiVeri = null; // Log için
-            int tur = 0; // 0=Ekleme, 2=Güncelleme
+            Urun eskiVeri = null;
+            int tur = 0;
 
-            if (_entity.Id != 0) // Güncelleme Modu
+            if (_entity.Id != 0)
             {
-                // DETACHED ENTITY SORUNUNU ÇÖZMEK İÇİN:
-                // Mevcut context'ten entity'yi tekrar çekip güncelliyoruz.
                 var managedEntity = urunDal.GetByFilter(context, u => u.Id == _entity.Id);
                 if (managedEntity != null)
                 {
-                    // Eski veriyi log için manuel kopyala (Clone metodu olmadığı için)
                     eskiVeri = new Urun
                     {
                         Id = managedEntity.Id,
@@ -197,10 +183,10 @@ namespace RestoranOtomasyonu.WinForms.Urunler
                         Tarih = managedEntity.Tarih
                     };
                     
-                    managedEntity.MenuId = (int)lookUpMenu.EditValue; // UI'dan al (En güncel)
+                    managedEntity.MenuId = (int)lookUpMenu.EditValue;
                     managedEntity.UrunKodu = txtUrunKodu.Text;
                     managedEntity.UrunAdi = txtUrunAdi.Text;
-                    managedEntity.BirimFiyati1 = Convert.ToDecimal(calcBirimFiyati1.Text); // Numeric formatting'e dikkat
+                    managedEntity.BirimFiyati1 = Convert.ToDecimal(calcBirimFiyati1.Text);
                     managedEntity.BirimFiyati2 = Convert.ToDecimal(calcBirimFiyati2.Text);
                     managedEntity.BirimFiyati3 = Convert.ToDecimal(calcBirimFiyati3.Text);
                     managedEntity.Aciklama = txtAciklama.Text;
@@ -213,10 +199,11 @@ namespace RestoranOtomasyonu.WinForms.Urunler
 
                     basarili = urunDal.AddOrUpdate(context, managedEntity);
                     tur = 2;
-                    eskiVeri = managedEntity; // Log için
+                    tur = 2;
+                    eskiVeri = managedEntity;
                 }
             }
-            else // Ekleme Modu
+            else
             {
                 basarili = urunDal.AddOrUpdate(context, _entity);
                 tur = 0;

@@ -49,12 +49,11 @@ namespace RestoranOtomasyonu.WinForms.AnaMenu
 
         private void frmAnaMenu_Load(object sender, EventArgs e)
         {
-            // Modern görünüm ayarları
+
             this.ribbon.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.ribbonStatusBar.Font = new System.Drawing.Font("Segoe UI", 9F);
             
-            // Sipariş Yönetim butonunu sadece yetkili kullanıcılara göster
-            // Yönetici, Garson veya Mutfak görevlileri görebilir
+
             bool siparisYonetimYetkisi = YetkiKontrolu.YoneticiMi || 
                                          YetkiKontrolu.GarsonMi || 
                                          YetkiKontrolu.RolVarMi("Mutfak");
@@ -77,18 +76,11 @@ namespace RestoranOtomasyonu.WinForms.AnaMenu
 
         private void btnKullanicilar_ItemClick(object sender, ItemClickEventArgs e)
         {
-            // DEBUG: Buton tıklama öncesi bilgileri logla
-            System.Diagnostics.Debug.WriteLine("=== btnKullanicilar TIKLAMA ===");
-            System.Diagnostics.Debug.WriteLine($"MevcutKullanici null mu?: {YetkiKontrolu.MevcutKullanici == null}");
             if (YetkiKontrolu.MevcutKullanici != null)
             {
-                System.Diagnostics.Debug.WriteLine($"Kullanıcı Görevi: '{YetkiKontrolu.MevcutKullanici.Gorevi}'");
-                System.Diagnostics.Debug.WriteLine($"MevcutKullaniciGorevi: '{YetkiKontrolu.MevcutKullaniciGorevi}'");
-                System.Diagnostics.Debug.WriteLine($"YoneticiMi: {YetkiKontrolu.YoneticiMi}");
             }
-            System.Diagnostics.Debug.WriteLine("==============================");
             
-            // Sadece Yönetici erişebilir
+
             if (!YetkiKontrolu.YoneticiMi)
             {
                 XtraMessageBox.Show("Bu işlem için Yönetici yetkisi gereklidir.", "Yetkisiz Erişim", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -125,7 +117,7 @@ namespace RestoranOtomasyonu.WinForms.AnaMenu
 
         private void btnSiparisYonetim_ItemClick(object sender, ItemClickEventArgs e)
         {
-            // Sadece Yönetici, Garson veya Mutfak erişebilir
+
             if (!YetkiKontrolu.YoneticiMi && !YetkiKontrolu.GarsonMi && !YetkiKontrolu.RolVarMi("Mutfak"))
             {
                 XtraMessageBox.Show("Bu işlem için Yönetici, Garson veya Mutfak yetkisi gereklidir.", "Yetkisiz Erişim", MessageBoxButtons.OK, MessageBoxIcon.Warning);

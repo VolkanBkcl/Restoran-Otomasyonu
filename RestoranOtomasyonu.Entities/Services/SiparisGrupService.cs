@@ -8,10 +8,9 @@ using System.Linq;
 
 namespace RestoranOtomasyonu.Entities.Services
 {
-    /// <summary>
-    /// Sipariş gruplandırma servisi
-    /// Aynı masa ve yakın zamanda verilen siparişleri gruplar
-    /// </summary>
+    // Sipariş gruplandırma servisi
+    // Aynı masa ve yakın zamanda verilen siparişleri gruplar
+    
     public class SiparisGrupService
     {
         private readonly SiparislerDal _siparislerDal;
@@ -29,9 +28,9 @@ namespace RestoranOtomasyonu.Entities.Services
             _kullanicilarDal = new KullanicilarDal();
         }
 
-        /// <summary>
-        /// Tüm siparişleri gruplandırılmış olarak getir
-        /// </summary>
+
+        // Tüm siparişleri gruplandırılmış olarak getir
+
         public List<SiparisGrupDTO> GetGruplandirilmisSiparisler(RestoranContext context, int? masaId = null)
         {
             // Siparişleri getir
@@ -151,9 +150,9 @@ namespace RestoranOtomasyonu.Entities.Services
             return gruplar.Values.OrderByDescending(g => g.SonSiparisTarihi).ToList();
         }
 
-        /// <summary>
+
         /// Sipariş durumunu güncelle
-        /// </summary>
+
         public bool SiparisDurumuGuncelle(RestoranContext context, int siparisId, SiparisDurumu yeniDurum)
         {
             var siparis = _siparislerDal.GetByFilter(context, s => s.Id == siparisId);
@@ -164,9 +163,9 @@ namespace RestoranOtomasyonu.Entities.Services
             return _siparislerDal.AddOrUpdate(context, siparis);
         }
 
-        /// <summary>
+    
         /// Grup içindeki tüm siparişlerin durumunu güncelle
-        /// </summary>
+
         public bool GrupDurumuGuncelle(RestoranContext context, string grupId, SiparisDurumu yeniDurum)
         {
             // Grup ID'den MasaId ve Tarih bilgisini çıkar
@@ -209,9 +208,9 @@ namespace RestoranOtomasyonu.Entities.Services
             return basarili;
         }
 
-        /// <summary>
+
         /// Durum metnini Türkçe olarak döndür
-        /// </summary>
+ 
         private string GetDurumMetni(SiparisDurumu durum)
         {
             // Enum değerine göre kontrol et (aynı değere sahip enum'lar için tek case kullan)

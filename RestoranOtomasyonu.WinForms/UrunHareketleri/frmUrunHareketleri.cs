@@ -28,7 +28,6 @@ namespace RestoranOtomasyonu.WinForms.UrunHareketleri
 
         private void Listele()
         {
-            // Sadece log kayıtlarını göster (SatisKodu = "LOG")
             var logKayitlari = urunHareketleriDal.GetAll(context)
                 .Where(u => u.SatisKodu == "LOG")
                 .OrderByDescending(u => u.Tarih)

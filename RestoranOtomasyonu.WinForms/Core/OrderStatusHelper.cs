@@ -27,19 +27,17 @@ namespace RestoranOtomasyonu.WinForms.Core
 
             using (var context = new RestoranContext())
             {
-                // Aynı satış koduna sahip birden fazla sipariş olma ihtimali düşük
-                // ancak yine de güvenli tarafta kalmak için FirstOrDefault ile tek kayıt alıyoruz.
                 var siparis = context.Set<Siparisler>()
                     .FirstOrDefault(s => s.SatisKodu == satisKodu);
 
                 if (siparis == null)
                     return;
 
-                // OrderStatus -> SiparisDurumu / OdemeDurumu eşlemesi
+
                 switch (newStatus)
                 {
                     case OrderStatus.Bos:
-                        // Masada aktif sipariş yok - tamamlanmış ve ödenmiş kabul ediyoruz
+
                         siparis.SiparisDurumu = SiparisDurumu.Tamamlandi;
                         siparis.OdemeDurumu = OdemeDurumu.TumuOdendi;
                         break;
@@ -51,7 +49,7 @@ namespace RestoranOtomasyonu.WinForms.Core
 
                     case OrderStatus.Hazirlaniyor:
                         siparis.SiparisDurumu = SiparisDurumu.Hazirlaniyor;
-                        // Ödeme hâlâ bekleniyor
+
                         siparis.OdemeDurumu = OdemeDurumu.OdemeBekliyor;
                         break;
 
@@ -61,13 +59,13 @@ namespace RestoranOtomasyonu.WinForms.Core
                         break;
 
                     case OrderStatus.OdemeBekleniyor:
-                        // Servis edilmiş ve hesap istenmiş
+
                         siparis.SiparisDurumu = SiparisDurumu.TeslimEdildi;
                         siparis.OdemeDurumu = OdemeDurumu.OdemeBekliyor;
                         break;
 
                     case OrderStatus.Odendi:
-                        // Ödeme tamamlandı (örn. blockchain sonrası)
+
                         siparis.SiparisDurumu = SiparisDurumu.Tamamlandi;
                         siparis.OdemeDurumu = OdemeDurumu.TumuOdendi;
                         break;
@@ -95,8 +93,7 @@ namespace RestoranOtomasyonu.WinForms.Core
             button.Appearance.Options.UseBackColor = true;
             button.Appearance.Options.UseForeColor = true;
 
-            // İsteğe bağlı: buton text'ine durumu eklemek için aşağıdaki satırı aktif edebilirsiniz.
-            // button.Text = $"{button.Text.Split(new[] { '-' }, 2)[0].Trim()} - {status}";
+
         }
 
         /// <summary>
@@ -124,28 +121,28 @@ namespace RestoranOtomasyonu.WinForms.Core
             switch (status)
             {
                 case OrderStatus.SiparisAlindi:
-                    // Sarı
+
                     return (Color.Gold, Color.Black);
 
                 case OrderStatus.Hazirlaniyor:
-                    // Turuncu
+
                     return (Color.Orange, Color.Black);
 
                 case OrderStatus.ServisEdildi:
-                    // Mavi
+
                     return (Color.SteelBlue, Color.White);
 
                 case OrderStatus.OdemeBekleniyor:
-                    // Kırmızı
+
                     return (Color.Firebrick, Color.White);
 
                 case OrderStatus.Odendi:
-                    // Yeşil (özellikle blockchain sonrası)
+
                     return (Color.SeaGreen, Color.White);
 
                 case OrderStatus.Bos:
                 default:
-                    // Boş masa için nötr gri
+
                     return (Color.LightGray, Color.Black);
             }
         }

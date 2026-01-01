@@ -26,12 +26,12 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
         private SiparisGrupService siparisGrupService = new SiparisGrupService();
         private SignalRClientService signalRService;
         private HttpClient httpClient;
-        private string apiBaseUrl = "http://localhost:5146/api/order"; // WebAPI base URL
+        private string apiBaseUrl = "http://localhost:5146/api/order";
         
-        // API URL'ini döndür (şimdilik sabit, ileride App.config'den okunabilir)
+
         private string GetApiBaseUrl()
         {
-            // Varsayılan URL
+
             return "http://localhost:5146/api/order";
         }
 
@@ -39,13 +39,12 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
         {
             InitializeComponent();
             
-            // API URL'ini yapılandırmadan al
             apiBaseUrl = GetApiBaseUrl();
             
             InitializeSignalR();
             InitializeHttpClient();
             
-            // Yetki kontrolü - Sadece Yönetici, Garson veya Mutfak erişebilir
+
             if (!YetkiKontrolu.YoneticiMi && !YetkiKontrolu.GarsonMi && !YetkiKontrolu.RolVarMi("Mutfak"))
             {
                 XtraMessageBox.Show("Bu işlem için Yönetici, Garson veya Mutfak yetkisi gereklidir.", "Yetkisiz Erişim", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -53,7 +52,6 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
                 return;
             }
             
-            // Durum Değiştir butonunu sadece Yönetici ve Mutfak görebilir
             bool durumDegistirmeYetkisi = YetkiKontrolu.YoneticiMi || YetkiKontrolu.RolVarMi("Mutfak");
             btnDurumDegistir.Visible = durumDegistirmeYetkisi;
             btnDurumDegistir.Enabled = durumDegistirmeYetkisi;
@@ -68,7 +66,6 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
                 // SignalR servisini oluştur (Program.cs'de zaten bağlı olmalı)
                 string apiBaseUrl = "http://localhost:5146";
                 signalRService = new SignalRClientService(apiBaseUrl);
-                // SignalR bağlantısı Program.cs'de yapılıyor, burada sadece referans tutuyoruz
             }
             catch (Exception ex)
             {
@@ -82,7 +79,7 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
             {
                 Timeout = TimeSpan.FromSeconds(30)
             };
-            // BaseAddress kullanmıyoruz, tam URL kullanacağız
+
             httpClient.DefaultRequestHeaders.Accept.Clear();
             httpClient.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
         }
@@ -93,7 +90,7 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
             {
                 var gruplar = siparisGrupService.GetGruplandirilmisSiparisler(context);
                 
-                // DataTable oluştur
+
                 var dt = new DataTable();
                 dt.Columns.Add("GrupId", typeof(string));
                 dt.Columns.Add("MasaAdi", typeof(string));
@@ -125,7 +122,6 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
                 gridControlSiparisler.DataSource = dt;
                 gridViewSiparisler.BestFitColumns();
 
-                // Durum kolonuna renk ver
                 if (gridViewSiparisler.Columns["DurumMetni"] != null)
                 {
                     gridViewSiparisler.Columns["DurumMetni"].AppearanceCell.BackColor = Color.White;
@@ -155,7 +151,7 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
             if (string.IsNullOrEmpty(grupId))
                 return;
 
-            // Grup detaylarını göster
+
             var gruplar = siparisGrupService.GetGruplandirilmisSiparisler(context);
             var grup = gruplar.FirstOrDefault(g => g.GrupId == grupId);
 
@@ -165,7 +161,7 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
                 return;
             }
 
-            // Detay formunu aç
+
             var frmDetay = new frmSiparisDetay(grup);
             frmDetay.ShowDialog();
         }
@@ -182,7 +178,7 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
             var grupId = gridViewSiparisler.GetFocusedRowCellValue("GrupId")?.ToString();
             var mevcutDurum = Convert.ToInt32(gridViewSiparisler.GetFocusedRowCellValue("Durum"));
 
-            // Durum seçim formu
+
             var frmDurum = new frmSiparisDurumSec(mevcutDurum);
             if (frmDurum.ShowDialog() == DialogResult.OK)
             {
@@ -195,14 +191,14 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
         {
             try
             {
-                // GrupId kontrolü
+
                 if (string.IsNullOrEmpty(grupId))
                 {
                     XtraMessageBox.Show("Grup ID bulunamadı. Lütfen bir sipariş grubu seçin.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                // WebAPI'ye istek gönder
+
                 var request = new
                 {
                     GrupId = grupId,
@@ -212,7 +208,6 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
                 var json = JsonConvert.SerializeObject(request);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                // URL'yi oluştur
                 var url = $"{apiBaseUrl}/updateGroupStatus";
                 
                 var response = await httpClient.PostAsync(url, content);
@@ -221,11 +216,11 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
                 if (response.IsSuccessStatusCode)
                 {
                     XtraMessageBox.Show("Sipariş durumu başarıyla güncellendi.", "Başarılı", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    Listele(); // Listeyi yenile
+                    Listele();
                 }
                 else
                 {
-                    // Hata mesajını parse et
+
                     string hataMesaji = responseContent;
                     try
                     {
@@ -237,7 +232,7 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
                     }
                     catch
                     {
-                        // JSON parse edilemezse direkt mesajı göster
+
                     }
 
                     XtraMessageBox.Show(
@@ -279,7 +274,7 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
             }
             catch (Exception ex)
             {
-                // Stack trace'i güvenli şekilde al
+
                 string stackTraceInfo = "N/A";
                 if (!string.IsNullOrEmpty(ex.StackTrace))
                 {

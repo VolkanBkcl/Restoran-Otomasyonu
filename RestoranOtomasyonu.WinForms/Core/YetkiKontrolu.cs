@@ -35,7 +35,7 @@ namespace RestoranOtomasyonu.WinForms.Core
             string kullaniciGorevi = MevcutKullaniciGorevi.Trim();
             string arananRol = rol.Trim();
             
-            // Türkçe karakter desteği ile karşılaştırma
+
             return string.Equals(kullaniciGorevi, arananRol, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -81,29 +81,26 @@ namespace RestoranOtomasyonu.WinForms.Core
             if (form == null || string.IsNullOrWhiteSpace(kullaniciGorevi))
                 return;
 
-            // Form üzerindeki tüm kontrolleri bul
+
             var kontroller = form.Controls.Cast<Control>().ToList();
             var tumKontroller = KontrolleriTopla(kontroller);
 
-            // Rol bazlı yapılandırma
+
             switch (kullaniciGorevi)
             {
                 case "Yönetici":
-                    // Yönetici her şeyi görebilir ve yapabilir
+
                     break;
 
                 case "Kasa":
-                    // Kasa: Ödeme alabilir, indirim yapabilir, ancak silme işlemlerini sınırla
                     KontrolGizleVeyaPasifYap(tumKontroller, new[] { "btnSil", "btnIptalEt" }, false);
                     break;
 
                 case "Garson":
-                    // Garson: Sadece sipariş ekleyebilir, ödeme ve indirim alanları pasif
                     KontrolGizleVeyaPasifYap(tumKontroller, new[] { "btnOdemeAl", "txtIndirimOrani", "calcIndirimTutari", "btnIndirimYap", "btnSil", "btnIptalEt" }, true);
                     break;
 
                 case "Musteri":
-                    // Müşteri: Sadece sipariş verebilir, yönetimsel butonlar gizli
                     KontrolGizleVeyaPasifYap(tumKontroller, new[] { 
                         "btnOdemeAl", "txtIndirimOrani", "calcIndirimTutari", "btnIndirimYap", 
                         "btnSil", "btnIptalEt", "btnDuzenle", "btnExport", "btnRapor" 
@@ -111,7 +108,6 @@ namespace RestoranOtomasyonu.WinForms.Core
                     break;
 
                 case "Mutfak":
-                    // Mutfak: Sadece görüntüleme, işlem yapamaz
                     KontrolGizleVeyaPasifYap(tumKontroller, new[] { 
                         "btnKaydet", "btnYeni", "btnDuzenle", "btnSil", 
                         "btnOdemeAl", "btnIndirimYap", "btnIptalEt" 
@@ -119,7 +115,6 @@ namespace RestoranOtomasyonu.WinForms.Core
                     break;
 
                 case "Kurye":
-                    // Kurye: Teslimat işlemleri
                     KontrolGizleVeyaPasifYap(tumKontroller, new[] { 
                         "btnSil", "btnDuzenle", "btnIndirimYap", "btnRapor" 
                     }, false);

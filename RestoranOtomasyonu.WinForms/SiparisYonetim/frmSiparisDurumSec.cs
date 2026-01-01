@@ -18,14 +18,14 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
 
         private void DurumlariYukle(int mevcutDurum)
         {
-            // ComboBox'a durumları ekle (ComboBoxEdit için string değerler kullanıyoruz)
+
             comboDurum.Properties.Items.Clear();
             comboDurum.Properties.Items.Add("Sipariş Alındı");
             comboDurum.Properties.Items.Add("Hazırlanıyor");
             comboDurum.Properties.Items.Add("Hazır");
             comboDurum.Properties.Items.Add("Servis Edildi");
 
-            // Mevcut durumu seç
+
             string mevcutDurumMetni = GetDurumMetni((SiparisDurumu)mevcutDurum);
             var mevcutIndex = comboDurum.Properties.Items.IndexOf(mevcutDurumMetni);
             if (mevcutIndex >= 0)
@@ -54,7 +54,7 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
                 return;
             }
 
-            // Seçilen string değere göre enum değerini belirle
+
             string secilenMetin = comboDurum.Text;
             SecilenDurum = GetDurumFromMetin(secilenMetin);
             this.DialogResult = DialogResult.OK;

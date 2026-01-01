@@ -19,7 +19,7 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
 
         private void VerileriYukle()
         {
-            // Grup bilgilerini göster
+
             lblMasaAdi.Text = $"Masa: {grup.MasaAdi}";
             lblToplamTutar.Text = $"Toplam Tutar: {grup.ToplamTutar:C}";
             lblNetTutar.Text = $"Net Tutar: {grup.NetTutar:C}";
@@ -28,7 +28,7 @@ namespace RestoranOtomasyonu.WinForms.SiparisYonetim
             lblDurum.Text = $"Durum: {grup.DurumMetni}";
             lblTarih.Text = $"Tarih: {grup.IlkSiparisTarihi:dd.MM.yyyy HH:mm} - {grup.SonSiparisTarihi:HH:mm}";
 
-            // Sipariş detaylarını göster
+
             var detayList = grup.SiparisDetaylari.Select(d => new
             {
                 Kullanici = $"{d.AdSoyad} ({d.KullaniciAdi})",

@@ -9,12 +9,7 @@ namespace RestoranOtomasyonu.WinForms.Services
     /// SignalR Client Service - Web API'den gelen gerçek zamanlı sipariş bildirimlerini dinlemek için
     /// tasarlanmış servis sınıfı.
     /// 
-    /// NOT:
-    /// Orijinal sürüm Microsoft.AspNetCore.SignalR.Client kütüphanesine bağlıydı.
-    /// Bu kütüphane derleme hatalarına neden olduğu için, servis şu anda "stub"
-    /// (boş ancak imzası korunan) hale getirildi. Böylece Program.cs içindeki
-    /// kullanım derlenir, ancak gerçek zamanlı bağlantı kurulmaz.
-    /// İleride ihtiyaç duyarsanız, gerçek SignalR kodunu tekrar ekleyebilirsiniz.
+
     /// </summary>
     public class SignalRClientService
     {
@@ -22,22 +17,22 @@ namespace RestoranOtomasyonu.WinForms.Services
         private bool _isConnected = false;
 
         /// <summary>
-        /// Yeni sipariş geldiğinde tetiklenecek event (şu anda yalnızca manuel kullanılabilir).
+
         /// </summary>
         public event EventHandler<OrderReceivedEventArgs> OrderReceived;
 
         /// <summary>
-        /// Sipariş ödendiğinde tetiklenecek event.
+
         /// </summary>
         public event EventHandler<OrderPaidEventArgs> OrderPaid;
 
         public SignalRClientService(string apiBaseUrl)
         {
-            _hubUrl = apiBaseUrl; // Örn: http://localhost:5146
+            _hubUrl = apiBaseUrl;
         }
 
         /// <summary>
-        /// SignalR Hub'a bağlan (stub - gerçek bağlantı yok).
+
         /// </summary>
         public Task ConnectAsync()
         {
@@ -47,7 +42,7 @@ namespace RestoranOtomasyonu.WinForms.Services
         }
 
         /// <summary>
-        /// SignalR Hub bağlantısını kes (stub - gerçek bağlantı yok).
+
         /// </summary>
         public Task DisconnectAsync()
         {
